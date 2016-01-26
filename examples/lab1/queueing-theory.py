@@ -1,7 +1,6 @@
-import sys
+from __future__ import division
 import random
 import csv
-import optparse
 import sys
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -11,7 +10,6 @@ sys.path.append('..')
 from src.sim import Sim
 from src import packet
 from networks.network import Network
-from pandas import DataFrame
 
 results = {}
 
@@ -48,7 +46,7 @@ class DelayHandler(object):
 if __name__ == '__main__':
     # parameters
 
-    percentages = [.1, .2, .3, .4, .5, .6, .7, .8, .9, .95, .98, .99]
+    percentages = [.1, .2, .3, .4, .5, .6, .7, .75, .8, .9, .95, .98]
 
     max_rate = 1000000/(1000*8)
 
@@ -79,25 +77,21 @@ if __name__ == '__main__':
             Sim.scheduler.run()
 
     with open('../../out/lab1/percentages.csv', 'wb') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=['Utilization', 'Queueing_Delay', 'Queueing_Delay_Theoretical'])
+        writer = csv.DictWriter(csvfile, fieldnames=['Utilization', 'Queueing Delay', 'Queueing Delay Theoretical'])
+
 
         writer.writeheader()
         for percentage in percentages:
             average = sum(results[percentage]) / len(results[percentage])
-            # delay_theoretical = (1 / (2 * 125)) * (percentage / (1 - percentage))
-            delay_theoretical = 2
-            writer.writerow({'Utilization': percentage, 'Queueing_Delay': average, 'Queueing_Delay_Theoretical': delay_theoretical})
+            delay_theoretical = (1 / (2 * 125)) * (percentage / (1 - percentage))
+            writer.writerow({'Utilization': percentage, 'Queueing Delay': average, 'Queueing Delay Theoretical': delay_theoretical})
 
-    data = pd.read_csv("../../out/lab1/percentages.csv")
+    df = pd.read_csv("../../out/lab1/percentages.csv")
     plt.figure()
 
-    experimental = data.plot(x='Utilization', y='Queueing_Delay')
+    experimental = df.plot(x='Utilization', y=['Queueing Delay', 'Queueing Delay Theoretical'])
     experimental.set_xlabel("Utilization")
     experimental.set_ylabel("Queueing Delay")
-
-    theoretical = data.plot(x='Utilization', y='Queueing_Delay_Theoretical')
-    theoretical.set_xlabel("Utilization")
-    theoretical.set_ylabel("Queueing Delay")
 
     fig = experimental.get_figure()
     fig.savefig('../../out/lab1/line.png')
