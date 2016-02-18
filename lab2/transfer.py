@@ -13,6 +13,11 @@ import optparse
 import os
 import subprocess
 
+original_size = 0
+received_size = 0
+
+
+
 class AppHandler(object):
     def __init__(self,filename):
         self.filename = filename
@@ -22,17 +27,26 @@ class AppHandler(object):
         self.f = open("%s/%s" % (self.directory,self.filename),'w')
 
     def receive_data(self,data):
+        global original_size
+        global received_size
         Sim.trace('AppHandler',"application got %d bytes" % (len(data)))
         self.f.write(data)
+        received_size += len(data)
         self.f.flush()
+        # if received_size == original_size:
+
 
 class Main(object):
     def __init__(self):
         self.directory = 'received'
         self.parse_options()
         self.run()
+
+        time = Sim.scheduler.current_time()
+        throughput = (original_size * 8) / time
+        print "Throughput: ",throughput
+
         self.diff()
-        # self.filename = 'internet-architecture.pdf'
 
     def parse_options(self):
         parser = optparse.OptionParser(usage = "%prog [options]",
@@ -50,11 +64,15 @@ class Main(object):
                           default=1000,
                           help="window size");
 
+        parser.add_option("-d","--debug",type="str",dest="debug",
+                          default="",
+                          help="debug statements")
+
         (options,args) = parser.parse_args()
         self.filename = options.filename
         self.loss = options.loss
-        # self.window = 1000
         self.window = options.window
+        self.debug = options.debug
 
     def diff(self):
         args = ['diff','-u',self.filename,self.directory+'/'+self.filename]
@@ -70,8 +88,11 @@ class Main(object):
     def run(self):
         # parameters
         Sim.scheduler.reset()
-        Sim.set_debug('AppHandler')
-        Sim.set_debug('TCP')
+
+        if "a" in self.debug:
+            Sim.set_debug('AppHandler')
+        if "t" in self.debug:
+            Sim.set_debug('TCP')
 
         # setup network
         net = Network('networks/one-hop.txt')
@@ -94,10 +115,12 @@ class Main(object):
         c1 = TCP(t1,n1.get_address('n2'),1,n2.get_address('n1'),1,a,window=self.window)
         c2 = TCP(t2,n2.get_address('n1'),1,n1.get_address('n2'),1,a,window=self.window)
 
+        global original_size
         f = open(self.filename, "rb")
         try:
             data = f.read(1000)
             while data != "":
+                original_size += len(data)
                 Sim.scheduler.add(delay=0, event=data, handler=c1.send)
                 data = f.read(1000)
         finally:

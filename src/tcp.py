@@ -74,6 +74,7 @@ class TCP(Connection):
                            destination_port=self.destination_port,
                            body=data,
                            sequence=sequence,ack_number=self.ack)
+        packet.created = Sim.scheduler.current_time()
 
         # send the packet
         self.trace("%s (%d) sending TCP segment to %d for %d" % (self.node.hostname,self.source_address,self.destination_address,packet.sequence))
