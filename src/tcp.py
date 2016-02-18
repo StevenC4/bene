@@ -60,7 +60,8 @@ class TCP(Connection):
         self.send_packets_if_possible()
 
     def send_packets_if_possible(self):
-        if self.send_buffer.outstanding() < self.window:
+        # if self.send_buffer.outstanding() < self.window:
+        while self.send_buffer.outstanding() < self.window and self.send_buffer.available():
             data_length = min(self.window - self.send_buffer.outstanding(), self.mss)
             data_tuple = self.send_buffer.get(data_length)
             data = data_tuple[0]
