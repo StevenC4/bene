@@ -46,9 +46,14 @@ class Main(object):
                           default=0.0,
                           help="random loss rate")
 
+        parser.add_option("-w","--window",type="float",dest="window",
+                          default=1000.0,
+                          help="window size");
+
         (options,args) = parser.parse_args()
         self.filename = options.filename
         self.loss = options.loss
+        self.window = options.window
 
     def diff(self):
         args = ['diff','-u',self.filename,self.directory+'/'+self.filename]
@@ -85,20 +90,15 @@ class Main(object):
         a = AppHandler(self.filename)
 
         # setup connection
-        c1 = TCP(t1,n1.get_address('n2'),1,n2.get_address('n1'),1,a,window=3000)
-        c2 = TCP(t2,n2.get_address('n1'),1,n1.get_address('n2'),1,a,window=3000)
+        c1 = TCP(t1,n1.get_address('n2'),1,n2.get_address('n1'),1,a,window=self.window)
+        c2 = TCP(t2,n2.get_address('n1'),1,n1.get_address('n2'),1,a,window=self.window)
 
-
-
-        size = 0
         f = open(self.filename, "rb")
         try:
             data = f.read(1000)
-            size += len(data)
             while data != "":
                 Sim.scheduler.add(delay=0, event=data, handler=c1.send)
                 data = f.read(1000)
-                size += len(data)
         finally:
             f.close()
 
