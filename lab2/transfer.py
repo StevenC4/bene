@@ -46,13 +46,14 @@ class Main(object):
                           default=0.0,
                           help="random loss rate")
 
-        parser.add_option("-w","--window",type="float",dest="window",
-                          default=1000.0,
+        parser.add_option("-w","--window",type="int",dest="window",
+                          default=1000,
                           help="window size");
 
         (options,args) = parser.parse_args()
         self.filename = options.filename
         self.loss = options.loss
+        # self.window = 1000
         self.window = options.window
 
     def diff(self):
