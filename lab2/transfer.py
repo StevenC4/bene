@@ -88,13 +88,34 @@ class Main(object):
         c1 = TCP(t1,n1.get_address('n2'),1,n2.get_address('n1'),1,a,window=3000)
         c2 = TCP(t2,n2.get_address('n1'),1,n1.get_address('n2'),1,a,window=3000)
 
-        # send a file
-        with open(self.filename,'r') as f:
-            while True:
-                data = f.read(1000)
-                if not data:
-                    break
+
+
+        size = 0
+        f = open(self.filename, "rb")
+        try:
+            data = f.read(1000)
+            size += len(data)
+            while data != "":
                 Sim.scheduler.add(delay=0, event=data, handler=c1.send)
+                data = f.read(1000)
+                size += len(data)
+        finally:
+            f.close()
+
+        print "FILE SIZE: ",size,"\n\n"
+
+
+
+        # send a file
+        # size = 0
+        # with open(self.filename,'r') as f:
+        #     while True:
+        #         data = f.read(1000)
+        #         size += len(data)
+        #         print "Size: ",size
+        #         if not data:
+        #             break
+        #         Sim.scheduler.add(delay=0, event=data, handler=c1.send)
 
         # run the simulation
         Sim.scheduler.run()

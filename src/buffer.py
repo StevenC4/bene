@@ -25,6 +25,7 @@ class SendBuffer(object):
         ''' Put some data into the buffer '''
         self.buffer += data
         self.last += len(data)
+        print self.last
 
     def get(self,size):
         ''' Get the next data that has not been sent yet. Return the

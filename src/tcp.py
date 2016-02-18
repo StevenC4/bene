@@ -98,10 +98,7 @@ class TCP(Connection):
         ''' Handle an incoming ACK. '''
         self.trace("%s (%d) receiving TCP ACK from %d for %d" % (self.node.hostname,self.source_address,self.destination_address,packet.ack_number))
         self.cancel_timer()
-
-        # self.trace("Packet ACK #: (%d), Outstanding: (%d), Available: (%d)" % (packet.ack_number,self.send_buffer.outstanding(),self.send_buffer.available()))
         self.send_buffer.slide(packet.ack_number)
-        # self.trace("Packet ACK #: (%d), Outstanding: (%d), Available: (%d)" % (packet.ack_number,self.send_buffer.outstanding(),self.send_buffer.available()))
         self.send_packets_if_possible()
 
     def retransmit(self,event):
