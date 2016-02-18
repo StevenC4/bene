@@ -76,6 +76,7 @@ class TCP(Connection):
             data_tuple = self.send_buffer.get(data_length)
             data = data_tuple[0]
             self.sequence = data_tuple[1]
+            self.trace("Made it into the while loop")
             self.send_packet(data,self.sequence)
 
     def send_packet(self,data,sequence):
@@ -108,9 +109,14 @@ class TCP(Connection):
         self.rto = self.srtt + max(self.g, self.k * self.rttvar)
 
         self.trace("%s (%d) receiving TCP ACK from %d for %d" % (self.node.hostname,self.source_address,self.destination_address,packet.ack_number))
+
         self.cancel_timer()
+
         self.send_buffer.slide(packet.ack_number)
         self.send_packets_if_possible()
+
+        if self.send_buffer.outstanding() and not self.timer:
+            self.timer = Sim.scheduler.add(delay=self.timeout, event='retransmit', handler=self.retransmit)
 
     def retransmit(self,event):
         ''' Retransmit data. '''
