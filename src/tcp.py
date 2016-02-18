@@ -57,16 +57,23 @@ class TCP(Connection):
         ''' Send data on the connection. Called by the application. This
             code currently sends all data immediately. '''
         self.send_buffer.put(data)
-        self.send_all_possible()
+        self.send_packets_if_possible()
 
-    def send_all_possible(self):
-        while self.send_buffer.outstanding() < self.window and self.send_buffer.available():
-            window_size_available = self.window - self.send_buffer.outstanding()
-            data_size = min(window_size_available, self.mss)
-            data_tuple = self.send_buffer.get(data_size)
+    def send_packets_if_possible(self):
+        # if self.send_buffer.available() and self.send_buffer.outstanding() < self.window:
+        # print "Attempting to send a packet"
+        if self.send_buffer.outstanding() < self.window:
+        # while self.send_buffer.outstanding() < self.window:
+        #     self.trace("Attempting to send packets: Outstanding: (%d), Available: (%d)" % (self.send_buffer.outstanding(),self.send_buffer.available()))
+            data_length = min(self.window - self.send_buffer.outstanding(), self.mss)
+            data_tuple = self.send_buffer.get(data_length)
             data = data_tuple[0]
-            data_sequence = data_tuple[1]
-            self.send_packet(data=data,sequence=data_sequence)
+            self.sequence = data_tuple[1]
+            self.send_packet(data,self.sequence)
+        # else:
+        #     print ""
+        #     print "Not sending packet"
+        #     print ""
 
     def send_packet(self,data,sequence):
         packet = TCPPacket(source_address=self.source_address,
@@ -76,33 +83,45 @@ class TCP(Connection):
                            body=data,
                            sequence=sequence,ack_number=self.ack)
 
-        self.trace("%s (%d) sending TCP segment to %d for %d" % (self.node.hostname,self.source_address,self.destination_address,packet.sequence))
         # send the packet
+        self.trace("%s (%d) sending TCP segment to %d for %d" % (self.node.hostname,self.source_address,self.destination_address,packet.sequence))
         self.transport.send_packet(packet)
+
+        # set a timer
         if not self.timer:
             self.timer = Sim.scheduler.add(delay=self.timeout, event='retransmit', handler=self.retransmit)
+            # print ""
+            # print "Timer scheduled to retransmit"
+            # print ""
 
     def handle_ack(self,packet):
         ''' Handle an incoming ACK. '''
         self.trace("%s (%d) receiving TCP ACK from %d for %d" % (self.node.hostname,self.source_address,self.destination_address,packet.ack_number))
-        # If the next ack has been received,
-        # Is the ack number the next one in line?
-
         self.cancel_timer()
+
+        # self.trace("Packet ACK #: (%d), Outstanding: (%d), Available: (%d)" % (packet.ack_number,self.send_buffer.outstanding(),self.send_buffer.available()))
         self.send_buffer.slide(packet.ack_number)
-        self.send_all_possible()
+        # self.trace("Packet ACK #: (%d), Outstanding: (%d), Available: (%d)" % (packet.ack_number,self.send_buffer.outstanding(),self.send_buffer.available()))
+        self.send_packets_if_possible()
 
     def retransmit(self,event):
         ''' Retransmit data. '''
+        # print ""
+        # print "Timer set to None"
+        # print ""
         self.timer = None
         self.trace("%s (%d) retransmission timer fired" % (self.node.hostname,self.source_address))
         data_tuple = self.send_buffer.resend(self.mss)
         data = data_tuple[0]
-        sequence = data_tuple[1]
-        self.send_packet(data, sequence)
+        if data:
+            self.sequence = data_tuple[1]
+            self.send_packet(data, self.sequence)
 
     def cancel_timer(self):
         ''' Cancel the timer. '''
+        # print ""
+        # print "Timer cancelled"
+        # print ""
         if not self.timer:
             return
         Sim.scheduler.cancel(self.timer)
@@ -117,7 +136,6 @@ class TCP(Connection):
         self.trace("%s (%d) received TCP segment from %d for %d" % (self.node.hostname,packet.destination_address,packet.source_address,packet.sequence))
         self.receive_buffer.put(packet.body, packet.sequence)
 
-        # check to see if data is in order
         data_tuple = self.receive_buffer.get()
         data = data_tuple[0]
         sequence = data_tuple[1]
