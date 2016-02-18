@@ -60,20 +60,12 @@ class TCP(Connection):
         self.send_packets_if_possible()
 
     def send_packets_if_possible(self):
-        # if self.send_buffer.available() and self.send_buffer.outstanding() < self.window:
-        # print "Attempting to send a packet"
         if self.send_buffer.outstanding() < self.window:
-        # while self.send_buffer.outstanding() < self.window:
-        #     self.trace("Attempting to send packets: Outstanding: (%d), Available: (%d)" % (self.send_buffer.outstanding(),self.send_buffer.available()))
             data_length = min(self.window - self.send_buffer.outstanding(), self.mss)
             data_tuple = self.send_buffer.get(data_length)
             data = data_tuple[0]
             self.sequence = data_tuple[1]
             self.send_packet(data,self.sequence)
-        # else:
-        #     print ""
-        #     print "Not sending packet"
-        #     print ""
 
     def send_packet(self,data,sequence):
         packet = TCPPacket(source_address=self.source_address,
@@ -90,9 +82,6 @@ class TCP(Connection):
         # set a timer
         if not self.timer:
             self.timer = Sim.scheduler.add(delay=self.timeout, event='retransmit', handler=self.retransmit)
-            # print ""
-            # print "Timer scheduled to retransmit"
-            # print ""
 
     def handle_ack(self,packet):
         ''' Handle an incoming ACK. '''
@@ -103,9 +92,6 @@ class TCP(Connection):
 
     def retransmit(self,event):
         ''' Retransmit data. '''
-        # print ""
-        # print "Timer set to None"
-        # print ""
         self.timer = None
         self.trace("%s (%d) retransmission timer fired" % (self.node.hostname,self.source_address))
         data_tuple = self.send_buffer.resend(self.mss)
@@ -116,9 +102,6 @@ class TCP(Connection):
 
     def cancel_timer(self):
         ''' Cancel the timer. '''
-        # print ""
-        # print "Timer cancelled"
-        # print ""
         if not self.timer:
             return
         Sim.scheduler.cancel(self.timer)

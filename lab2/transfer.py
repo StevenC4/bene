@@ -102,21 +102,6 @@ class Main(object):
         finally:
             f.close()
 
-        print "FILE SIZE: ",size,"\n\n"
-
-
-
-        # send a file
-        # size = 0
-        # with open(self.filename,'r') as f:
-        #     while True:
-        #         data = f.read(1000)
-        #         size += len(data)
-        #         print "Size: ",size
-        #         if not data:
-        #             break
-        #         Sim.scheduler.add(delay=0, event=data, handler=c1.send)
-
         # run the simulation
         Sim.scheduler.run()
 
