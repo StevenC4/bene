@@ -24,7 +24,7 @@ class AppHandler(object):
         self.directory = 'received'
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
-        self.f = open("%s/%s" % (self.directory,self.filename),'w')
+        self.f = open("%s/%s" % (self.directory,self.filename),'wb')
 
     def receive_data(self,data):
         global original_size

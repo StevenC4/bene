@@ -30,6 +30,16 @@ class TCP(Connection):
         # timeout duration in seconds
         self.timeout = 1
 
+        # constants
+        self.k = 4
+        self.g = .1
+        self.alpha = 1/8
+        self.beta = 1/4
+
+        self.rto = 3
+        self.srtt = None
+        self.rttvar = None
+
         ### Receiver functionality
 
         # receive buffer
@@ -87,6 +97,16 @@ class TCP(Connection):
 
     def handle_ack(self,packet):
         ''' Handle an incoming ACK. '''
+
+        r = Sim.scheduler.current_time() - 0
+        if not self.srtt and not self.rttvar:
+            self.srtt = r
+            self.rttvar = r / 2
+        else:
+            self.rttvar = (1 - self.beta) * self.rttvar + (self.beta * abs(self.srtt - r))
+            self.srtt = (1 - self.alpha) * self.srtt + (self.alpha * r)
+        self.rto = self.srtt + max(self.g, self.k * self.rttvar)
+
         self.trace("%s (%d) receiving TCP ACK from %d for %d" % (self.node.hostname,self.source_address,self.destination_address,packet.ack_number))
         self.cancel_timer()
         self.send_buffer.slide(packet.ack_number)
@@ -100,6 +120,7 @@ class TCP(Connection):
         data = data_tuple[0]
         if data:
             self.sequence = data_tuple[1]
+            self.timer = Sim.scheduler.add(delay=self.rto, event='retransmit', handler=self.retransmit)
             self.send_packet(data, self.sequence)
 
     def cancel_timer(self):
@@ -124,15 +145,17 @@ class TCP(Connection):
         if data:
             self.app.receive_data(data)
             self.ack = sequence + len(data)
-        self.send_ack()
 
-    def send_ack(self):
+        self.send_ack(packet.created)
+
+    def send_ack(self, created):
         ''' Send an ack. '''
         packet = TCPPacket(source_address=self.source_address,
                            source_port=self.source_port,
                            destination_address=self.destination_address,
                            destination_port=self.destination_port,
                            sequence=self.sequence,ack_number=self.ack)
+        packet.created = created
         # send the packet
         self.trace("%s (%d) sending TCP ACK to %d for %d" % (self.node.hostname,self.source_address,self.destination_address,packet.ack_number))
         self.transport.send_packet(packet)
