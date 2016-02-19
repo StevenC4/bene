@@ -60,24 +60,26 @@ class Main(object):
         global total_time
         global num_transmissions
 
-        losses = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+        # losses = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+        # losses = [0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
+        losses = [0.9, 0.925, 0.95, 0.975]
 
         for loss in losses:
             total_time = 0
             num_transmissions = 0
-            for x in range(0,1):
+            for x in range(0,10):
                 self.setup_and_run(loss, False)
             average_time = total_time / num_transmissions
             times[loss] = {"static": average_time}
 
             total_time = 0
             num_transmissions = 0
-            for x in range(0,1):
+            for x in range(0,10):
                 self.setup_and_run(loss, False)
             average_time = total_time / num_transmissions
             times[loss]["dynamic"] = average_time
 
-        self.save_plot(times, "Loss", "Static Retransmission Timer", "Dynamic Retransmission Timer", "out/time-per-loss.png")
+        self.save_plot(times, "Loss", "Static Retransmission Timer", "Dynamic Retransmission Timer", "out/time-per-loss-zoomed.png")
 
     def save_plot(self, dict, x_col_name, y_col_name_1, y_col_name_2, save_file_path):
         with open('out/tmp/loss-times.csv', 'wb') as csvfile:
