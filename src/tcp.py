@@ -9,7 +9,7 @@ from src.buffer import SendBuffer,ReceiveBuffer
 class TCP(Connection):
     ''' A TCP connection between two hosts.'''
     def __init__(self,transport,source_address,source_port,
-                 destination_address,destination_port,app=None,window=1000):
+                 destination_address,destination_port,app=None,window=1000,dynamic_rto=True):
         Connection.__init__(self,transport,source_address,source_port,
                             destination_address,destination_port,app)
 
@@ -36,6 +36,7 @@ class TCP(Connection):
         self.alpha = 1/8
         self.beta = 1/4
 
+        self.dynamic_rto = dynamic_rto
         self.rto = 3
         self.srtt = None
         self.rttvar = None
@@ -125,7 +126,10 @@ class TCP(Connection):
         data = data_tuple[0]
         if data:
             self.sequence = data_tuple[1]
-            self.timer = Sim.scheduler.add(delay=self.rto, event='retransmit', handler=self.retransmit)
+            if self.dynamic_rto:
+                self.timer = Sim.scheduler.add(delay=self.rto, event='retransmit', handler=self.retransmit)
+            else:
+                self.timer = Sim.scheduler.add(delay=self.timeout, event='retransmit', handler=self.retransmit)
             self.send_packet(data, self.sequence)
 
     def cancel_timer(self):
