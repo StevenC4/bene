@@ -99,7 +99,7 @@ class TCP(Connection):
     def handle_ack(self,packet):
         ''' Handle an incoming ACK. '''
 
-        r = Sim.scheduler.current_time() - 0
+        r = Sim.scheduler.current_time() - packet.created
         if not self.srtt and not self.rttvar:
             self.srtt = r
             self.rttvar = r / 2
