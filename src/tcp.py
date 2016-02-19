@@ -76,7 +76,6 @@ class TCP(Connection):
             data_tuple = self.send_buffer.get(data_length)
             data = data_tuple[0]
             self.sequence = data_tuple[1]
-            self.trace("Made it into the while loop")
             self.send_packet(data,self.sequence)
 
     def send_packet(self,data,sequence):
