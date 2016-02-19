@@ -8,7 +8,6 @@ from networks.network import Network
 import csv
 import os
 import subprocess
-import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from operator import itemgetter
@@ -61,7 +60,9 @@ class Main(object):
         global total_time
         global num_transmissions
 
-        for loss in np.arange(0, 1, 0.1):
+        losses = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+
+        for loss in losses:
             total_time = 0
             num_transmissions = 0
             for x in range(0,1):
