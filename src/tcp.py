@@ -94,7 +94,7 @@ class TCP(Connection):
 
         # set a timer
         if not self.timer:
-            self.timer = Sim.scheduler.add(delay=self.timeout, event='retransmit', handler=self.retransmit)
+            self.timer = Sim.scheduler.add(delay=self.rto, event='retransmit', handler=self.retransmit)
 
     def handle_ack(self,packet):
         ''' Handle an incoming ACK. '''
@@ -116,7 +116,7 @@ class TCP(Connection):
         self.send_packets_if_possible()
 
         if self.send_buffer.outstanding() and not self.timer:
-            self.timer = Sim.scheduler.add(delay=self.timeout, event='retransmit', handler=self.retransmit)
+            self.timer = Sim.scheduler.add(delay=self.rto, event='retransmit', handler=self.retransmit)
 
     def retransmit(self,event):
         ''' Retransmit data. '''
@@ -129,7 +129,7 @@ class TCP(Connection):
             if self.dynamic_rto:
                 self.timer = Sim.scheduler.add(delay=self.rto, event='retransmit', handler=self.retransmit)
             else:
-                self.timer = Sim.scheduler.add(delay=self.timeout, event='retransmit', handler=self.retransmit)
+                self.timer = Sim.scheduler.add(delay=self.rto, event='retransmit', handler=self.retransmit)
             self.send_packet(data, self.sequence)
 
     def cancel_timer(self):
