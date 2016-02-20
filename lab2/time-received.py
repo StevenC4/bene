@@ -2,7 +2,7 @@ import sys
 sys.path.append('..')
 
 from src.sim import Sim
-from src.tcp import TCP
+from tcp import TCP
 from networks.network import Network
 from operator import itemgetter
 

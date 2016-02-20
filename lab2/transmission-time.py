@@ -1,7 +1,7 @@
 import sys
 sys.path.append('..')
 
-from src.sim import Sim
+from sim import Sim
 from src.tcp import TCP
 from networks.network import Network
 

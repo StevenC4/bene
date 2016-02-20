@@ -2,10 +2,8 @@ import sys
 sys.path.append('..')
 
 from src.sim import Sim
-from src.node import Node
-from src.link import Link
 from src.transport import Transport
-from src.tcp import TCP
+from tcp import TCP
 
 from networks.network import Network
 
