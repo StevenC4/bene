@@ -11,7 +11,7 @@ default_mss = 1000
 class TCP(Connection):
     ''' A TCP connection between two hosts.'''
     def __init__(self,transport,source_address,source_port,
-                 destination_address,destination_port,app=None,window=1000,dynamic_rto=True):
+                 destination_address,destination_port,app=None,window=1000,dynamic_rto=True,type="Tahoe"):
         Connection.__init__(self,transport,source_address,source_port,
                             destination_address,destination_port,app)
 
@@ -32,6 +32,13 @@ class TCP(Connection):
         # timeout duration in seconds
         self.timeout = 1
 
+        self.threshold = 100000
+
+        self.ack_received_count = {}
+        self.wait_for_timeout = False;
+
+        self.reno_fast_recovery = type == "Reno"
+
         # constants
         self.k = 4
         self.g = .1
@@ -50,8 +57,6 @@ class TCP(Connection):
         # ack number to send; represents the largest in-order sequence
         # number not yet received
         self.ack = 0
-
-        self.threshold = 100000
 
     def trace(self,message):
         ''' Print debugging messages. '''
@@ -112,32 +117,61 @@ class TCP(Connection):
             self.srtt = (1 - self.alpha) * self.srtt + (self.alpha * r)
         self.rto = self.srtt + max(self.g, self.k * self.rttvar)
 
-        print "Seqeunce Num: [%d] ACKed: [%d]" % (self.sequence, packet.ack_number)
-
         self.trace("%s (%d) receiving TCP ACK from %d for %d" % (self.node.hostname,self.source_address,self.destination_address,packet.ack_number))
 
         self.cancel_timer()
 
-        # somehow increment the cwnd here
-
+        # Slide the buffer and get the number of new bytes acked
+        old_unacked = self.send_buffer.outstanding()
         self.send_buffer.slide(packet.ack_number)
+        new_unacked = self.send_buffer.outstanding()
+        new_acked_data = max(old_unacked - new_unacked, 0)
+
+        if packet.ack_number not in self.ack_received_count:
+            self.ack_received_count[packet.ack_number] = 0
+        self.ack_received_count[packet.ack_number] += 1
+
+        # If this is the fourth ack with the same number that you are receiving, fast retransmit
+        if self.ack_received_count[packet.ack_number] == 4 and not self.wait_for_timeout:
+            #Sim.scheduler.cancel(self.timer)
+            self.wait_for_timeout = True
+            self.retransmit(True, True)
+        # Otherwise, if the window is less than the threshold, slow start increase the window size
+        elif self.window < self.threshold:
+            self.window += new_acked_data
+        #Otherwise, additive increase the window size
+        else:
+            self.window += (self.mss * new_acked_data) / self.window
+        #print "                                                               CURRENT WINDOW SIZE: [%d]                       " % (self.window)
+
         self.send_packets_if_possible()
 
         if self.send_buffer.outstanding() and not self.timer:
             self.timer = Sim.scheduler.add(delay=self.rto, event='retransmit', handler=self.retransmit)
 
-    def retransmit(self,event):
+    def retransmit(self,event,duplicate_ack=False):
         ''' Retransmit data. '''
+        self.threshold = max(self.window / 2, self.mss)
+        if duplicate_ack and self.reno_fast_recovery:
+            self.window = self.threshold
+        elif duplicate_ack and not self.reno_fast_recovery:
+            self.window = self.mss
+
+        # Only change the threshold when it's a 
+        if not duplicate_ack and self.wait_for_timeout:
+            self.ack_received_count = {}
+            self.wait_for_timeout = False
+        elif not duplicate_ack and not self.wait_for_timeout:
+            self.window = self.mss 
+
+
         self.timer = None
-        self.trace("%s (%d) retransmission timer fired" % (self.node.hostname,self.source_address))
-        data_tuple = self.send_buffer.resend(self.mss)
+        self.trace("%s (%d) entering fast retransmission" % (self.node.hostname,self.source_address))
+        data_tuple = self.send_buffer.resend(self.mss)      # TODO: Make this bigger, I think
         data = data_tuple[0]
         if data:
             self.sequence = data_tuple[1]
-            if self.dynamic_rto:
-                self.timer = Sim.scheduler.add(delay=self.rto, event='retransmit', handler=self.retransmit)
-            else:
-                self.timer = Sim.scheduler.add(delay=self.rto, event='retransmit', handler=self.retransmit)
+            self.timer = Sim.scheduler.add(delay=self.rto, event='retransmit', handler=self.retransmit)
             self.send_packet(data, self.sequence)
 
     def cancel_timer(self):
