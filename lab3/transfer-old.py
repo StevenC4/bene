@@ -7,17 +7,12 @@ from tcp import TCP
 
 from networks.network import Network
 
-import Plotter
-
 import optparse
 import os
 import subprocess
 
 original_size = 0
 received_size = 0
-
-
-plotter = new Plotter()
 
 class AppHandler(object):
     def __init__(self,filename):
@@ -35,9 +30,6 @@ class AppHandler(object):
         received_size += len(data)
         self.f.flush()
         # if received_size == original_size:
-
-    def add_sequence_plot_data(self,t,sequence,event):
-        plotter.add_data()
 
 
 class Main(object):
