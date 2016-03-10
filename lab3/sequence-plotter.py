@@ -11,48 +11,57 @@ class Plotter:
     def __init__(self,file):
         """ Initialize plotter with a file name. """
         self.file = file
-        self.data = []
+        self.transmitted_data = []
+        self.dropped_data = []
+        self.acked_data = []
         self.min_time = None
         self.max_time = None
 
-    def parse(self):
-        """ Parse the data file """
-        first = None
-        f = open(self.file)
-        for line in f.readlines():
-            if line.startswith("#"):
-                continue
-            try:
-                t,sequence,size = line.split()
-            except:
-                continue
-            t = float(t)
-            sequence = int(sequence)
-            size = int(size)
-            self.data.append((t,sequence,size))
-            if not self.min_time or t < self.min_time:
-                self.min_time = t
-            if not self.max_time or t > self.max_time:
-                self.max_time = t
+    def add_data(self,t,sequence,event):
+        t = float(t)
+        sequence = int(sequence)
+
+        if  event == 'Transmitted':
+            self.transmitted_data.append((t,sequence))
+        if  event == 'Dropped':
+            self.dropped_data.append((t,sequence))
+        if  event == 'Acked':
+            self.acked_data.append((t,sequence))
+
+        if not self.min_time or t < self.min_time:
+            self.min_time = t
+        if not self.max_time or t > self.max_time:
+            self.max_time = t
 
     def plot(self):
         """ Create a sequence graph of the packets. """
         clf()
         figure(figsize=(15,5))
-        x = []
-        y = []
-        ackX = []
-        ackY = []
-        for (t,sequence,size) in self.data:
-            x.append(t)
-            y.append(sequence % (1000*50))
-            # pretend the ACK came 0.2 seconds later
-            ackX.append(t + 0.2)
-            ackY.append(sequence % (1000*50))
-            
         
-        scatter(x,y,marker='s',s=3)
-        scatter(ackX,ackY,marker='s',s=0.2)
+        transmitted_x = []
+        transmitted_y = []
+
+        lost_x = []
+        lost_y = []
+        
+        acked_x = []
+        acked_y = []
+
+        for (t,sequence) in self.transmitted_data:
+            transmitted_x.append(t)
+            transmitted_y.append(sequence / 1000) % (1000*50))
+            
+        for (t,sequence) in self.lost_data:
+            lost_x.append(t)
+            lost_y.append(sequence / 1000) % (1000*50))
+
+        for (t,sequence) in self.acked_data:
+            acked_x.append(t)
+            acked_y.append(sequence / 1000) % (1000*50))
+        
+        scatter(transmitted_x,transmitted_y,marker='s',s=3)
+        scatter(lost_x,lost_y,marker='x',s=0.2)
+        scatter(acked_x,acked_y,marker='o',s=1)
         xlabel('Time (seconds)')
         ylabel('Sequence Number Mod 1500')
         xlim([self.min_time,self.max_time])
