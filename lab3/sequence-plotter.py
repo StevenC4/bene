@@ -8,9 +8,8 @@ from pylab import *
 # squares indicate a sequence number being sent and dots indicate a
 # sequence number being ACKed.
 class Plotter:
-    def __init__(self,file):
+    def __init__(self):
         """ Initialize plotter with a file name. """
-        self.file = file
         self.transmitted_data = []
         self.dropped_data = []
         self.acked_data = []
@@ -33,7 +32,7 @@ class Plotter:
         if not self.max_time or t > self.max_time:
             self.max_time = t
 
-    def plot(self):
+    def plot(self,filename):
         """ Create a sequence graph of the packets. """
         clf()
         figure(figsize=(15,5))
@@ -63,18 +62,14 @@ class Plotter:
         scatter(lost_x,lost_y,marker='x',s=0.2)
         scatter(acked_x,acked_y,marker='o',s=1)
         xlabel('Time (seconds)')
-        ylabel('Sequence Number Mod 1500')
+        ylabel('Sequence Number / 1000 % 50')
         xlim([self.min_time,self.max_time])
-        savefig('sequence.png')
+        savefig(filename)
 
 def parse_options():
         # parse options
         parser = optparse.OptionParser(usage = "%prog [options]",
                                        version = "%prog 0.1")
-
-        parser.add_option("-f","--file",type="string",dest="file",
-                          default=None,
-                          help="file")
 
         (options,args) = parser.parse_args()
         return (options,args)
