@@ -38,6 +38,7 @@ class TCP(Connection):
         self.wait_for_timeout = False;
 
         self.reno_fast_recovery = type == "Reno"
+        print self.reno_fast_recovery
 
         # constants
         self.k = 4
@@ -97,6 +98,13 @@ class TCP(Connection):
                            sequence=sequence,ack_number=self.ack)
         packet.created = Sim.scheduler.current_time()
 
+        if self.window > 32000 and (not hasattr(self, 'dropped') or self.dropped < 10):
+            if not hasattr(self, 'dropped'):
+                self.dropped = 0
+            packet.drop_packet = True
+            self.dropped += 1
+            print "Dropping packet"
+
         # Store data for plotting
         self.app.add_sequence_plot_data(Sim.scheduler.current_time(),sequence,'Transmitted')
 
@@ -137,7 +145,7 @@ class TCP(Connection):
         # If this is the fourth ack with the same number that you are receiving, fast retransmit
         if self.ack_received_count[packet.ack_number] == 4 and not self.wait_for_timeout:
             #Sim.scheduler.cancel(self.timer)
-            #self.wait_for_timeout = True
+            self.wait_for_timeout = True
             self.retransmit(True, True)
         # Otherwise, if the window is less than the threshold, slow start increase the window size
         elif self.window < self.threshold:
@@ -158,9 +166,12 @@ class TCP(Connection):
     def retransmit(self,event,duplicate_ack=False):
         ''' Retransmit data. '''
 
+        print 'Because of duplicate ack: ',duplicate_ack
+
         self.threshold = max(self.window / 2, self.mss)
         if duplicate_ack and self.reno_fast_recovery:
             self.window = self.threshold
+            print "Reno fast rescovery"
         elif duplicate_ack and not self.reno_fast_recovery:
             self.window = self.mss
 

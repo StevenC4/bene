@@ -25,6 +25,10 @@ class Link(object):
         # check if link is running
         if not self.running:
             return
+        # drop packet if instructed to do so
+        if packet.drop_packet:
+            self.trace("%d packet dropped because I said so" % (self.address))
+            return
         # drop packet due to queue overflow
         if self.queue_size and len(self.queue) == self.queue_size:
             self.trace("%d dropped packet due to queue overflow" % (self.address))

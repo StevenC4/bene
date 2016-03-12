@@ -1,0 +1,21 @@
+Test 1
+
+Transfer an image file (36KB) - all in slow start.  Window size grew to 35756 bytes, 
+which is just over 36 packets.  Every time an ACK is received, two packets of equal size are 
+sent out in its place because the window was increased.
+
+Test 2
+
+Transfer an image file (36KB) - all in slow start and then transfer to Additive Increment after
+the window reaches 1600 bytes.  The behavior is the same as in test 1 until the window reaches 1600
+bytes.  Then, it begins increasing by a fraction of an MSS per ACK received.  Two packets are sent
+out in the ACKed one's place, but the first one is 1000 bytes (1 MSS) and the second on is very small
+ - the fraction of an MSS by which the window was increased.
+ 
+Test 3
+
+Transfer an image file (145KB) - drop a single packet when the window size reaches 3200 bytes.
+Small queue size, large initial threshold.  Has a multiplicative decrease, slow restart to smaller
+window size.
+
+Test 4

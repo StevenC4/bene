@@ -35,7 +35,7 @@ class Plotter:
     def plot(self,filename):
         """ Create a sequence graph of the packets. """
         clf()
-        #figure(figsize=(15,5))
+        figure(figsize=(15,10))
         
         transmitted_x = []
         transmitted_y = []
@@ -62,9 +62,9 @@ class Plotter:
             acked_y.append(sequence)
 
         #scatter(transmitted_x,transmitted_y,marker='.',s=1,c="black")
-        scatter(transmitted_x,transmitted_y,marker='s',s=1,c="black")
-        scatter(dropped_x,dropped_y,marker='x',s=30,c="red")
-        scatter(acked_x,acked_y,marker='o',s=2,c="green")
+        scatter(transmitted_x,transmitted_y,marker='s',s=15,c="black")
+        scatter(dropped_x,dropped_y,marker='x',s=100,c="red")
+        scatter(acked_x,acked_y,marker='o',s=15,c="blue")
         xlabel('Time (seconds)')
         ylabel('Sequence Number / 1000 % 50')
         xlim([self.min_time,self.max_time])

@@ -3,7 +3,7 @@ from sim import Sim
 class Packet(object):
     def __init__(self,source_address=1,source_port=0,
                  destination_address=1,destination_port=0,
-                 ident=0,ttl=100,protocol="None",body="",length=0):
+                 ident=0,ttl=100,protocol="None",body="",length=0,drop_packet=False):
         # standard packet fields
         self.source_address = source_address
         self.source_port = source_port
@@ -24,3 +24,6 @@ class Packet(object):
         self.queueing_delay = 0
         self.transmission_delay = 0
         self.propagation_delay = 0
+
+        # custom
+        self.drop_packet = drop_packet
