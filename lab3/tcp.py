@@ -97,6 +97,9 @@ class TCP(Connection):
                            sequence=sequence,ack_number=self.ack)
         packet.created = Sim.scheduler.current_time()
 
+        # Store data for plotting
+        self.app.add_sequence_plot_data(Sim.scheduler.current_time(),sequence,'Transmitted')
+
         # send the packet
         self.trace("%s (%d) sending TCP segment to %d for %d" % (self.node.hostname,self.source_address,self.destination_address,packet.sequence))
         self.transport.send_packet(packet)
@@ -134,15 +137,18 @@ class TCP(Connection):
         # If this is the fourth ack with the same number that you are receiving, fast retransmit
         if self.ack_received_count[packet.ack_number] == 4 and not self.wait_for_timeout:
             #Sim.scheduler.cancel(self.timer)
-            self.wait_for_timeout = True
+            #self.wait_for_timeout = True
             self.retransmit(True, True)
         # Otherwise, if the window is less than the threshold, slow start increase the window size
         elif self.window < self.threshold:
             self.window += new_acked_data
+            # Store data for plotting
+            self.app.add_sequence_plot_data(Sim.scheduler.current_time(),packet.ack_number,'Acked')
         #Otherwise, additive increase the window size
         else:
             self.window += (self.mss * new_acked_data) / self.window
-        #print "                                                               CURRENT WINDOW SIZE: [%d]                       " % (self.window)
+            # Store data for plotting
+            self.app.add_sequence_plot_data(Sim.scheduler.current_time(),packet.ack_number,'Acked')
 
         self.send_packets_if_possible()
 
@@ -151,6 +157,7 @@ class TCP(Connection):
 
     def retransmit(self,event,duplicate_ack=False):
         ''' Retransmit data. '''
+
         self.threshold = max(self.window / 2, self.mss)
         if duplicate_ack and self.reno_fast_recovery:
             self.window = self.threshold
@@ -171,6 +178,10 @@ class TCP(Connection):
         data = data_tuple[0]
         if data:
             self.sequence = data_tuple[1]
+            
+            # Store data for plotting
+            self.app.add_sequence_plot_data(Sim.scheduler.current_time(),self.sequence,'Dropped')
+            
             self.timer = Sim.scheduler.add(delay=self.rto, event='retransmit', handler=self.retransmit)
             self.send_packet(data, self.sequence)
 

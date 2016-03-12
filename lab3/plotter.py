@@ -35,32 +35,36 @@ class Plotter:
     def plot(self,filename):
         """ Create a sequence graph of the packets. """
         clf()
-        figure(figsize=(15,5))
+        #figure(figsize=(15,5))
         
         transmitted_x = []
         transmitted_y = []
 
-        lost_x = []
-        lost_y = []
+        dropped_x = []
+        dropped_y = []
         
         acked_x = []
         acked_y = []
 
         for (t,sequence) in self.transmitted_data:
             transmitted_x.append(t)
-            transmitted_y.append(sequence / 1000) % (1000*50))
-            
-        for (t,sequence) in self.lost_data:
-            lost_x.append(t)
-            lost_y.append(sequence / 1000) % (1000*50))
+            #transmitted_y.append((sequence / 1000) % 50)
+            transmitted_y.append(sequence)
+
+        for (t,sequence) in self.dropped_data:
+            dropped_x.append(t)
+            #dropped_y.append((sequence / 1000) % 50)
+            dropped_y.append(sequence)
 
         for (t,sequence) in self.acked_data:
             acked_x.append(t)
-            acked_y.append(sequence / 1000) % (1000*50))
-        
-        scatter(transmitted_x,transmitted_y,marker='s',s=3)
-        scatter(lost_x,lost_y,marker='x',s=0.2)
-        scatter(acked_x,acked_y,marker='o',s=1)
+            #acked_y.append((sequence / 1000) % 50)
+            acked_y.append(sequence)
+
+        #scatter(transmitted_x,transmitted_y,marker='.',s=1,c="black")
+        scatter(transmitted_x,transmitted_y,marker='s',s=1,c="black")
+        scatter(dropped_x,dropped_y,marker='x',s=30,c="red")
+        scatter(acked_x,acked_y,marker='o',s=2,c="green")
         xlabel('Time (seconds)')
         ylabel('Sequence Number / 1000 % 50')
         xlim([self.min_time,self.max_time])

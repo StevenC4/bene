@@ -7,7 +7,7 @@ from tcp import TCP
 
 from networks.network import Network
 
-import Plotter
+from plotter import Plotter
 
 import optparse
 import os
@@ -17,15 +17,15 @@ original_size = 0
 received_size = 0
 
 
-plotter = new Plotter()
+plotter = Plotter()
 
 class AppHandler(object):
-    def __init__(self,filename):
-        self.filename = filename
+    def __init__(self,inputfile):
+        self.inputfile = inputfile
         self.directory = 'received'
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
-        self.f = open("%s/%s" % (self.directory,self.filename),'wb')
+        self.f = open("%s/%s" % (self.directory,self.inputfile),'wb')
 
     def receive_data(self,data):
         global original_size
@@ -37,7 +37,7 @@ class AppHandler(object):
         # if received_size == original_size:
 
     def add_sequence_plot_data(self,t,sequence,event):
-        plotter.add_data()
+        plotter.add_data(t,sequence,event)
 
 
 class Main(object):
@@ -56,7 +56,7 @@ class Main(object):
         parser = optparse.OptionParser(usage = "%prog [options]",
                                        version = "%prog 0.1")
 
-        parser.add_option("-f","--filename",type="str",dest="filename",
+        parser.add_option("-f","--inputfile",type="str",dest="inputfile",
                           default='internet-architecture.pdf',
                           help="filename to send")
 
@@ -76,15 +76,20 @@ class Main(object):
                           default="Tahoe",
                           help="Type of TCP implementation (Tahoe or Reno)")
 
+        parser.add_option("-s","--sequencefile",type="str",dest="sequencefile",
+                          default="out/default_sequence_plot.png",
+                          help="Destination for sequence plot")
+
         (options,args) = parser.parse_args()
-        self.filename = options.filename
+        self.inputfile = options.inputfile
         self.loss = options.loss
         self.window = options.window
         self.debug = options.debug
         self.type = options.type
+        self.sequencefile = options.sequencefile
 
     def diff(self):
-        args = ['diff','-u',self.filename,self.directory+'/'+self.filename]
+        args = ['diff','-u',self.inputfile,self.directory+'/'+self.inputfile]
         result = subprocess.Popen(args,stdout = subprocess.PIPE,shell=True).communicate()[0]
         print
         if not result:
@@ -118,14 +123,14 @@ class Main(object):
         t2 = Transport(n2)
 
         # setup application
-        a = AppHandler(self.filename)
+        a = AppHandler(self.inputfile)
 
         # setup connection
         c1 = TCP(t1,n1.get_address('n2'),1,n2.get_address('n1'),1,a,window=self.window,type=self.type)
         c2 = TCP(t2,n2.get_address('n1'),1,n1.get_address('n2'),1,a,window=self.window,type=self.type)
 
         global original_size
-        f = open(self.filename, "rb")
+        f = open(self.inputfile, "rb")
         try:
             data = f.read(1000)
             while data != "":
@@ -137,6 +142,8 @@ class Main(object):
 
         # run the simulation
         Sim.scheduler.run()
+
+        plotter.plot(self.sequencefile);
 
 if __name__ == '__main__':
     m = Main()
