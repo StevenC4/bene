@@ -88,6 +88,7 @@ class TCP(Connection):
             self.sequence = data_tuple[1]
             self.send_packet(data,self.sequence)
 
+
     def send_packet(self,data,sequence):
         packet = TCPPacket(source_address=self.source_address,
                            source_port=self.source_port,
@@ -96,15 +97,6 @@ class TCP(Connection):
                            body=data,
                            sequence=sequence,ack_number=self.ack)
         packet.created = Sim.scheduler.current_time()
-
-        if self.window > 32000 and (not hasattr(self, 'dropped') or self.dropped < 10):
-            if not hasattr(self, 'dropped'):
-                self.dropped = 0
-            packet.drop_packet = True
-            self.dropped += 1
-
-        # Store data for plotting
-        self.app.add_sequence_plot_data(Sim.scheduler.current_time(),sequence,'Transmitted')
 
         # send the packet
         self.trace("%s (%d) sending TCP segment to %d for %d" % (self.node.hostname,self.source_address,self.destination_address,packet.sequence))
@@ -148,13 +140,11 @@ class TCP(Connection):
         # Otherwise, if the window is less than the threshold, slow start increase the window size
         elif self.window < self.threshold:
             self.window += new_acked_data
-            # Store data for plotting
-            self.app.add_sequence_plot_data(Sim.scheduler.current_time(),packet.ack_number,'Acked')
         #Otherwise, additive increase the window size
         else:
             self.window += (self.mss * new_acked_data) / self.window
-            # Store data for plotting
-            self.app.add_sequence_plot_data(Sim.scheduler.current_time(),packet.ack_number,'Acked')
+            
+        self.app.add_plot_data(Sim.scheduler.current_time(),self.window,'WindowSize')
 
         self.send_packets_if_possible()
 
@@ -184,11 +174,7 @@ class TCP(Connection):
         data_tuple = self.send_buffer.resend(self.mss)      # TODO: Make this bigger, I think
         data = data_tuple[0]
         if data:
-            self.sequence = data_tuple[1]
-            
-            # Store data for plotting
-            self.app.add_sequence_plot_data(Sim.scheduler.current_time(),self.sequence,'Dropped')
-            
+            self.sequence = data_tuple[1]            
             self.timer = Sim.scheduler.add(delay=self.rto, event='retransmit', handler=self.retransmit)
             self.send_packet(data, self.sequence)
 
@@ -207,6 +193,8 @@ class TCP(Connection):
             an ACK.'''
         self.trace("%s (%d) received TCP segment from %d for %d" % (self.node.hostname,packet.destination_address,packet.source_address,packet.sequence))
         self.receive_buffer.put(packet.body, packet.sequence)
+
+        self.app.add_plot_data(Sim.scheduler.current_time(),packet.length,'ReceiverRate')
 
         data_tuple = self.receive_buffer.get()
         data = data_tuple[0]

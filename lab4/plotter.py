@@ -25,7 +25,7 @@ class Plotter:
             self.receiver_rate.append((t,data))
         if  event == 'QueueSize':
             self.queue_size.append((t,data))
-        if event == 'QueueDrop'
+        if event == 'QueueDrop':
             self.queue_dropped.append((t,data))
         if  event == 'WindowSize':
             self.window_size.append((t,data))

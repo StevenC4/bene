@@ -5,7 +5,7 @@ from src.sim import Sim
 from src.transport import Transport
 from tcp import TCP
 
-from networks.network import Network
+from network import Network
 
 from plotter import Plotter
 
@@ -13,9 +13,10 @@ import optparse
 import os
 import subprocess
 
+import threading
+
 original_size = 0
 received_size = 0
-
 
 plotter = Plotter()
 
@@ -34,10 +35,9 @@ class AppHandler(object):
         self.f.write(data)
         received_size += len(data)
         self.f.flush()
-        # if received_size == original_size:
 
-    def add_sequence_plot_data(self,t,sequence,event):
-        plotter.add_data(t,sequence,event)
+    def add_plot_data(self,t,data,event):
+        plotter.add_data(t,data,event)
 
 
 class Main(object):
@@ -109,7 +109,7 @@ class Main(object):
             Sim.set_debug('TCP')
 
         # setup network
-        net = Network('networks/one-hop.txt')
+        net = Network(config='networks/one-hop.txt',plotter=plotter)
         net.loss(self.loss)
 
         # setup routes
@@ -141,9 +141,10 @@ class Main(object):
             f.close()
 
         # run the simulation
+
         Sim.scheduler.run()
 
-        plotter.plot(self.sequencefile);
+        #plotter.plot(self.sequencefile);
 
 if __name__ == '__main__':
     m = Main()
