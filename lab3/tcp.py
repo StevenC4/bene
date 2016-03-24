@@ -38,7 +38,6 @@ class TCP(Connection):
         self.wait_for_timeout = False;
 
         self.reno_fast_recovery = type == "Reno"
-        print self.reno_fast_recovery
 
         # constants
         self.k = 4
@@ -103,7 +102,6 @@ class TCP(Connection):
                 self.dropped = 0
             packet.drop_packet = True
             self.dropped += 1
-            print "Dropping packet"
 
         # Store data for plotting
         self.app.add_sequence_plot_data(Sim.scheduler.current_time(),sequence,'Transmitted')
@@ -166,12 +164,10 @@ class TCP(Connection):
     def retransmit(self,event,duplicate_ack=False):
         ''' Retransmit data. '''
 
-        print 'Because of duplicate ack: ',duplicate_ack
 
         self.threshold = max(self.window / 2, self.mss)
         if duplicate_ack and self.reno_fast_recovery:
             self.window = self.threshold
-            print "Reno fast rescovery"
         elif duplicate_ack and not self.reno_fast_recovery:
             self.window = self.mss
 
