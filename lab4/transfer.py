@@ -111,7 +111,6 @@ class Main(object):
             print result
 
     def decisecond(self,Sim):
-        print "Decisecond"
         global decisecondEvent
         decisecondEvent = Sim.scheduler.add(delay=0.1, event=Sim, handler=self.decisecond)
         #plotter.add_data(t,data,event)
