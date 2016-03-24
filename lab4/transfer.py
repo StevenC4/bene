@@ -144,7 +144,7 @@ class Main(object):
 
         Sim.scheduler.run()
 
-        #plotter.plot(self.sequencefile);
+        plotter.plot(self.sequencefile);
 
 if __name__ == '__main__':
     m = Main()
