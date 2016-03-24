@@ -20,6 +20,10 @@ received_size = 0
 
 plotter = Plotter()
 
+decisecondEvent = None
+decisecondBytes = []
+previous_decisecond_stored_size = 0
+
 class AppHandler(object):
     def __init__(self,inputfile):
         self.inputfile = inputfile
@@ -35,6 +39,13 @@ class AppHandler(object):
         self.f.write(data)
         received_size += len(data)
         self.f.flush()
+        if received_size == original_size:
+            global decisecondEvent
+            Sim.scheduler.cancel(decisecondEvent)
+
+            global previous_decisecond_stored_size
+            bytes_per_second = (original_size - previous_decisecond_stored_size) / Sim.scheduler.current_time()
+            self.add_plot_data(Sim.scheduler.current_time(),bytes_per_second,'ReceiverRate')
 
     def add_plot_data(self,t,data,event):
         plotter.add_data(t,data,event)
@@ -99,6 +110,21 @@ class Main(object):
             print
             print result
 
+    def decisecond(self,Sim):
+        print "Decisecond"
+        global decisecondEvent
+        decisecondEvent = Sim.scheduler.add(delay=0.1, event=Sim, handler=self.decisecond)
+        #plotter.add_data(t,data,event)
+        global received_size
+        global previous_decisecond_stored_size
+
+        decisecondBytes.append(received_size - previous_decisecond_stored_size)
+        previous_decisecond_stored_size = received_size
+
+        if len(decisecondBytes) >= 10:
+            total_bytes_previous_second = sum(decisecondBytes[(len(decisecondBytes) - 10):len(decisecondBytes)])
+            plotter.add_data(Sim.scheduler.current_time(),total_bytes_previous_second,'ReceiverRate')
+
     def run(self):
         # parameters
         Sim.scheduler.reset()
@@ -141,6 +167,9 @@ class Main(object):
             f.close()
 
         # run the simulation
+
+        global decisecondEvent
+        decisecondEvent = Sim.scheduler.add(delay=0.1, event=Sim, handler=self.decisecond)
 
         Sim.scheduler.run()
 

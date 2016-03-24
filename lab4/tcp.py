@@ -196,8 +196,6 @@ class TCP(Connection):
         self.trace("%s (%d) received TCP segment from %d for %d" % (self.node.hostname,packet.destination_address,packet.source_address,packet.sequence))
         self.receive_buffer.put(packet.body, packet.sequence)
 
-        self.app.add_plot_data(Sim.scheduler.current_time(),packet.length,'ReceiverRate')
-
         data_tuple = self.receive_buffer.get()
         data = data_tuple[0]
         sequence = data_tuple[1]
