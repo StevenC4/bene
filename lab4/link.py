@@ -32,7 +32,7 @@ class Link(object):
             return
         # drop packet due to queue overflow
         if self.queue_size and len(self.queue) == self.queue_size:
-            self.plotter.add_data(Sim.scheduler.current_time(),self.queue_size + 1,'QueueDrop')
+            self.plotter.add_data(Sim.scheduler.current_time(),len(self.queue) + 1,'QueueDrop')
             self.trace("%d dropped packet due to queue overflow" % (self.address))
             return
         # drop packet due to random loss
@@ -40,7 +40,7 @@ class Link(object):
             self.trace("%d dropped packet due to random loss" % (self.address))
             return
         packet.enter_queue = Sim.scheduler.current_time()
-        self.plotter.add_data(Sim.scheduler.current_time(),self.queue_size,'QueueSize')
+        self.plotter.add_data(Sim.scheduler.current_time(),len(self.queue),'QueueSize')
         if len(self.queue) == 0 and not self.busy:
             # packet can be sent immediately
             self.busy = True

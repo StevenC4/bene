@@ -77,7 +77,7 @@ class Main(object):
                           help="Type of TCP implementation (Tahoe or Reno)")
 
         parser.add_option("-s","--sequencefile",type="str",dest="sequencefile",
-                          default="out/default_sequence_plot.png",
+                          default="out/default",
                           help="Destination for sequence plot")
 
         (options,args) = parser.parse_args()

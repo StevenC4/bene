@@ -6,6 +6,8 @@ from src.connection import Connection
 from src.tcppacket import TCPPacket
 from src.buffer import SendBuffer,ReceiveBuffer
 
+
+
 default_mss = 1000
 
 class TCP(Connection):
