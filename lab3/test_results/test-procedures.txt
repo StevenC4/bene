@@ -19,3 +19,6 @@ Small queue size, large initial threshold.  Has a multiplicative decrease, slow 
 window size.
 
 Test 4
+
+Burst loss - behaves about the same
+
