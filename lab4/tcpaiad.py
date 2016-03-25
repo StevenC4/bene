@@ -173,8 +173,8 @@ class TCP(Connection):
         ''' Retransmit data. '''
 
 
-        self.threshold = max(self.threshold - 1, self.mss)
-        self.window = max(self.window - 1, self.mss) 
+        self.threshold = max(self.threshold - self.mss, self.mss)
+        self.window = max(self.window - self.mss, self.mss) 
 
         self.timer = None
         self.trace("%s (%d) entering fast retransmission" % (self.node.hostname,self.source_address))
