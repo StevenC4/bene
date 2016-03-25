@@ -13,7 +13,7 @@ default_mss = 1000
 class TCP(Connection):
     ''' A TCP connection between two hosts.'''
     def __init__(self,transport,source_address,source_port,
-                 destination_address,destination_port,app=None,window=1000,dynamic_rto=True,type="Tahoe"):
+                 destination_address,destination_port,app=None,window=1000,dynamic_rto=True,type="Tahoe",window_size_plot=False,sequence_plot=False):
         Connection.__init__(self,transport,source_address,source_port,
                             destination_address,destination_port,app)
 
@@ -60,6 +60,9 @@ class TCP(Connection):
         # number not yet received
         self.ack = 0
 
+        self.window_size_plot = window_size_plot
+        self.sequence_plot = sequence_plot
+
     def trace(self,message):
         ''' Print debugging messages. '''
         Sim.trace("TCP",message)
@@ -100,6 +103,10 @@ class TCP(Connection):
                            sequence=sequence,ack_number=self.ack)
         packet.created = Sim.scheduler.current_time()
 
+        # Store data for plotting
+        if self.sequence_plot:
+            self.app.add_plot_data(Sim.scheduler.current_time(),sequence,'Transmitted',self.app.identifier)
+
         # send the packet
         self.trace("%s (%d) sending TCP segment to %d for %d" % (self.node.hostname,self.source_address,self.destination_address,packet.sequence))
         self.transport.send_packet(packet)
@@ -124,8 +131,11 @@ class TCP(Connection):
 
         self.cancel_timer()
 
-        # Slide the buffer and get the number of new bytes acked
+        # Slide the buffer and get the number of new bytes acked - only if the ack number is >= the base of the send buffer
         old_unacked = self.send_buffer.outstanding()
+        if packet.ack_number < self.send_buffer.base:
+            return;
+
         self.send_buffer.slide(packet.ack_number)
         new_unacked = self.send_buffer.outstanding()
         new_acked_data = max(old_unacked - new_unacked, 0)
@@ -142,11 +152,17 @@ class TCP(Connection):
         # Otherwise, if the window is less than the threshold, slow start increase the window size
         elif self.window < self.threshold:
             self.window += new_acked_data
+            # Store data for plotting
+            if self.sequence_plot:
+                self.app.add_plot_data(Sim.scheduler.current_time(),packet.ack_number,'Acked',self.app.identifier)
         #Otherwise, additive increase the window size
         else:
             self.window += (self.mss * new_acked_data) / self.window
+            if self.sequence_plot:
+                self.app.add_plot_data(Sim.scheduler.current_time(),packet.ack_number,'Acked',self.app.identifier)
             
-        self.app.add_plot_data(Sim.scheduler.current_time(),self.window,'WindowSize')
+        if self.window_size_plot:
+            self.app.add_plot_data(Sim.scheduler.current_time(),self.window,'WindowSize',self.app.identifier)
 
         self.send_packets_if_possible()
 
@@ -170,13 +186,18 @@ class TCP(Connection):
         elif not duplicate_ack and not self.wait_for_timeout:
             self.window = self.mss 
 
-
         self.timer = None
         self.trace("%s (%d) entering fast retransmission" % (self.node.hostname,self.source_address))
-        data_tuple = self.send_buffer.resend(self.mss)      # TODO: Make this bigger, I think
+        data_tuple = self.send_buffer.resend(self.window)      # TODO: Make this bigger, I think
         data = data_tuple[0]
+        
         if data:
             self.sequence = data_tuple[1]            
+
+            # Store data for plotting
+            if self.sequence_plot:
+                self.app.add_plot_data(Sim.scheduler.current_time(),self.sequence,'Dropped',self.app.identifier)
+
             self.timer = Sim.scheduler.add(delay=self.rto, event='retransmit', handler=self.retransmit)
             self.send_packet(data, self.sequence)
 

@@ -18,7 +18,7 @@ import threading
 original_size = 0
 received_size = {}
 
-plotter = Plotter('out/general')
+plotter = Plotter('out/2-flows-simple')
 
 decisecondEvent = None
 decisecondBytes = {}
@@ -152,7 +152,7 @@ class Main(object):
             Sim.set_debug('TCP')
 
         # setup network
-        networkPlotter = Plotter('out/link')
+        networkPlotter = Plotter('out/2-flows-simple')
         net = Network(config='networks/one-hop.txt',plotter=networkPlotter)
         net.loss(self.loss)
 
@@ -167,11 +167,8 @@ class Main(object):
         t2 = Transport(n2)
 
         # setup connection
-        c1 = TCP(t1,n1.get_address('n2'),1,n2.get_address('n1'),1,AppHandler(inputfile=self.inputfile,plot=True,identifier="c1"),window=self.window,type=self.type)
-        c2 = TCP(t2,n2.get_address('n1'),1,n1.get_address('n2'),1,AppHandler(inputfile=self.inputfile,plot=True,identifier="c2"),window=self.window,type=self.type)
-
-        # c1 = TCP(t1,n1.get_address('n2'),1,n2.get_address('n1'),1,AppHandler(inputfile=self.inputfile,plot=True),window=self.window,type=self.type)
-        # c2 = TCP(t2,n2.get_address('n1'),1,n1.get_address('n2'),1,AppHandler(inputfile=self.inputfile),window=self.window,type=self.type,window_size_plot=True,sequence_plot=True)
+        c1 = TCP(t1,n1.get_address('n2'),1,n2.get_address('n1'),1,AppHandler(inputfile=self.inputfile,plot=True,identifier="c1"),window=self.window,type=self.type,window_size_plot=True,sequence_plot=True)
+        c2 = TCP(t2,n2.get_address('n1'),1,n1.get_address('n2'),1,AppHandler(inputfile=self.inputfile,plot=True,identifier="c2"),window=self.window,type=self.type,window_size_plot=True,sequence_plot=True)
 
         global original_size
         f = open(self.inputfile, "rb")
