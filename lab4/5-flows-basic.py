@@ -21,8 +21,8 @@ received_size = {}
 plotter = Plotter('out/5-flows-simple')
 
 decisecondEvent = None
-decisecondBytes = {}
-previous_decisecond_stored_size = {}
+
+tcps = []
 plotting = {}
 
 class AppHandler(object):
@@ -32,18 +32,12 @@ class AppHandler(object):
         self.plot = plot
         self.identifier = identifier
 
-        global applications
+        global plotting
         plotting[identifier] = plot
 
         global received_size
         received_size[identifier] = 0
         
-        global previous_decisecond_stored_size
-        previous_decisecond_stored_size[identifier] = 0
-
-        global decisecondBytes
-        decisecondBytes[identifier] = []
-
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
         self.f = open("%s/%s" % (self.directory,self.inputfile),'wb')
@@ -52,7 +46,7 @@ class AppHandler(object):
         if self.plot:
             global original_size
             global received_size
-            global applications
+            global plotting
             Sim.trace('AppHandler',"application got %d bytes" % (len(data)))
             self.f.write(data)
             received_size[self.identifier] += len(data)
@@ -66,14 +60,8 @@ class AppHandler(object):
                 global decisecondEvent
                 Sim.scheduler.cancel(decisecondEvent)
 
-                global previous_decisecond_stored_size
-                bytes_per_second = (original_size - previous_decisecond_stored_size[self.identifier]) / Sim.scheduler.current_time()
-                #print "Bytes per second: ", bytes_per_second
-                self.add_plot_data(Sim.scheduler.current_time(),bytes_per_second,'ReceiverRate',self.identifier)
-            #print 'Total bytes received', received_size, " Original ", original_size
-
-    def add_plot_data(self,t,data,event,identifier=None):
-        plotter.add_data(t,data,event,identifier)
+    def add_plot_data(self,t,data,event):
+        plotter.add_data(t,data,event,self.identifier)
 
 
 class Main(object):
@@ -134,18 +122,10 @@ class Main(object):
     def decisecond(self,Sim):
         global decisecondEvent
         decisecondEvent = Sim.scheduler.add(delay=0.1, event=Sim, handler=self.decisecond)
-        #plotter.add_data(t,data,event)
-        global received_size
-        global previous_decisecond_stored_size
-
-        for identifier in received_size.keys(): 
-            decisecondBytes[identifier].append(received_size[identifier] - previous_decisecond_stored_size[identifier])
-            previous_decisecond_stored_size[identifier] = received_size[identifier]
-            if len(decisecondBytes[identifier]) >= 10:
-                total_bytes_previous_second = sum(decisecondBytes[identifier][(len(decisecondBytes[identifier]) - 10):len(decisecondBytes[identifier])])
-            else:
-                total_bytes_previous_second = sum(decisecondBytes[identifier])
-            plotter.add_data(Sim.scheduler.current_time(),total_bytes_previous_second,'ReceiverRate',identifier)
+        
+        global tcps
+        for tcp in tcps:
+            tcp.spur_plot_data_submission()
 
     def run(self):
         # parameters
@@ -173,19 +153,22 @@ class Main(object):
 
         # setup connection
         c1 = TCP(t1,n1.get_address('n2'),1,n2.get_address('n1'),1,AppHandler(inputfile=self.inputfile,identifier="c1"),window=self.window,type=self.type)
-        c2 = TCP(t2,n2.get_address('n1'),1,n1.get_address('n2'),1,AppHandler(inputfile=self.inputfile,plot=True,identifier="c2"),window=self.window,type=self.type)
+        c2 = TCP(t2,n2.get_address('n1'),1,n1.get_address('n2'),1,AppHandler(inputfile=self.inputfile,plot=True,identifier="c2"),window=self.window,type=self.type,receiver_flow_plot=True)
         
         c3 = TCP(t1,n1.get_address('n2'),2,n2.get_address('n1'),2,AppHandler(inputfile=self.inputfile,identifier="c3"),window=self.window,type=self.type)
-        c4 = TCP(t2,n2.get_address('n1'),2,n1.get_address('n2'),2,AppHandler(inputfile=self.inputfile,plot=True,identifier="c4"),window=self.window,type=self.type)
+        c4 = TCP(t2,n2.get_address('n1'),2,n1.get_address('n2'),2,AppHandler(inputfile=self.inputfile,plot=True,identifier="c4"),window=self.window,type=self.type,receiver_flow_plot=True)
 
         c5 = TCP(t1,n1.get_address('n2'),3,n2.get_address('n1'),3,AppHandler(inputfile=self.inputfile,identifier="c5"),window=self.window,type=self.type)
-        c6 = TCP(t2,n2.get_address('n1'),3,n1.get_address('n2'),3,AppHandler(inputfile=self.inputfile,plot=True,identifier="c6"),window=self.window,type=self.type)
+        c6 = TCP(t2,n2.get_address('n1'),3,n1.get_address('n2'),3,AppHandler(inputfile=self.inputfile,plot=True,identifier="c6"),window=self.window,type=self.type,receiver_flow_plot=True)
         
         c7 = TCP(t1,n1.get_address('n2'),4,n2.get_address('n1'),4,AppHandler(inputfile=self.inputfile,identifier="c7"),window=self.window,type=self.type)
-        c8 = TCP(t2,n2.get_address('n1'),4,n1.get_address('n2'),4,AppHandler(inputfile=self.inputfile,plot=True,identifier="c8"),window=self.window,type=self.type)
+        c8 = TCP(t2,n2.get_address('n1'),4,n1.get_address('n2'),4,AppHandler(inputfile=self.inputfile,plot=True,identifier="c8"),window=self.window,type=self.type,receiver_flow_plot=True)
 
         c9 = TCP(t1,n1.get_address('n2'),5,n2.get_address('n1'),5,AppHandler(inputfile=self.inputfile,identifier="c9"),window=self.window,type=self.type)
-        c10 = TCP(t2,n2.get_address('n1'),5,n1.get_address('n2'),5,AppHandler(inputfile=self.inputfile,plot=True,identifier="c10"),window=self.window,type=self.type)
+        c10 = TCP(t2,n2.get_address('n1'),5,n1.get_address('n2'),5,AppHandler(inputfile=self.inputfile,plot=True,identifier="c10"),window=self.window,type=self.type,receiver_flow_plot=True)
+
+        global tcps
+        tcps = [c1, c2, c3, c4, c5, c6, c7, c8, c9, c10]
 
         global original_size
         f = open(self.inputfile, "rb")

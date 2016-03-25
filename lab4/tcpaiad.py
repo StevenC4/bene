@@ -13,7 +13,7 @@ default_mss = 1000
 class TCP(Connection):
     ''' A TCP connection between two hosts.'''
     def __init__(self,transport,source_address,source_port,
-                 destination_address,destination_port,app=None,window=1000,dynamic_rto=True,type="Tahoe",window_size_plot=False,sequence_plot=False):
+                 destination_address,destination_port,app=None,window=1000,dynamic_rto=True,type="Tahoe",window_size_plot=False,sequence_plot=False,receiver_flow_plot=False):
         Connection.__init__(self,transport,source_address,source_port,
                             destination_address,destination_port,app)
 
@@ -62,6 +62,10 @@ class TCP(Connection):
 
         self.window_size_plot = window_size_plot
         self.sequence_plot = sequence_plot
+        self.receiver_flow_plot = receiver_flow_plot
+
+        self.decisecond_received = 0
+        self.decisecond_bytes = []
 
     def trace(self,message):
         ''' Print debugging messages. '''
@@ -105,7 +109,7 @@ class TCP(Connection):
 
         # Store data for plotting
         if self.sequence_plot:
-            self.app.add_plot_data(Sim.scheduler.current_time(),sequence,'Transmitted',self.app.identifier)
+            self.app.add_plot_data(Sim.scheduler.current_time(),sequence,'Transmitted')
 
         # send the packet
         self.trace("%s (%d) sending TCP segment to %d for %d" % (self.node.hostname,self.source_address,self.destination_address,packet.sequence))
@@ -154,15 +158,15 @@ class TCP(Connection):
             self.window += new_acked_data
             # Store data for plotting
             if self.sequence_plot:
-                self.app.add_plot_data(Sim.scheduler.current_time(),packet.ack_number,'Acked',self.app.identifier)
+                self.app.add_plot_data(Sim.scheduler.current_time(),packet.ack_number,'Acked')
         #Otherwise, additive increase the window size
         else:
             self.window += (self.mss * new_acked_data) / self.window
             if self.sequence_plot:
-                self.app.add_plot_data(Sim.scheduler.current_time(),packet.ack_number,'Acked',self.app.identifier)
+                self.app.add_plot_data(Sim.scheduler.current_time(),packet.ack_number,'Acked')
             
         if self.window_size_plot:
-            self.app.add_plot_data(Sim.scheduler.current_time(),self.window,'WindowSize',self.app.identifier)
+            self.app.add_plot_data(Sim.scheduler.current_time(),self.window,'WindowSize')
 
         self.send_packets_if_possible()
 
@@ -186,7 +190,7 @@ class TCP(Connection):
 
             # Store data for plotting
             if self.sequence_plot:
-                self.app.add_plot_data(Sim.scheduler.current_time(),self.sequence,'Dropped',self.app.identifier)
+                self.app.add_plot_data(Sim.scheduler.current_time(),self.sequence,'Dropped')
 
             self.timer = Sim.scheduler.add(delay=self.rto, event='retransmit', handler=self.retransmit)
             self.send_packet(data, self.sequence)
@@ -207,6 +211,9 @@ class TCP(Connection):
         self.trace("%s (%d) received TCP segment from %d for %d" % (self.node.hostname,packet.destination_address,packet.source_address,packet.sequence))
         self.receive_buffer.put(packet.body, packet.sequence)
 
+        # For throughput
+        self.decisecond_received += len(packet.body)
+
         data_tuple = self.receive_buffer.get()
         data = data_tuple[0]
         sequence = data_tuple[1]
@@ -215,6 +222,18 @@ class TCP(Connection):
             self.ack = sequence + len(data)
 
         self.send_ack(packet.created)
+
+    def spur_plot_data_submission(self):
+        if not self.receiver_flow_plot:
+            return
+        
+        self.decisecond_bytes.append(self.decisecond_received)
+        self.decisecond_received = 0
+        if len(self.decisecond_bytes) >= 10:
+            total_bytes_previous_second = sum(self.decisecond_bytes[(len(self.decisecond_bytes) - 10):len(self.decisecond_bytes)])
+        else:
+            total_bytes_previous_second = sum(self.decisecond_bytes)
+        self.app.add_plot_data(Sim.scheduler.current_time(),total_bytes_previous_second,'ReceiverRate')    
 
     def send_ack(self, created):
         ''' Send an ack. '''
