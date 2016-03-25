@@ -3,7 +3,7 @@ sys.path.append('..')
 
 from src.sim import Sim
 from src.transport import Transport
-from tcpaiad import TCP
+from tcp import TCP
 
 from network import Network
 
@@ -18,11 +18,12 @@ import threading
 original_size = 0
 received_size = {}
 
-plotter = Plotter('out/1-flow-advanced-aiad')
+plotter = Plotter('out/2-flows-advanced-competing-aimd')
 
 decisecondEvent = None
 
 tcps = []
+plotting = {}
 
 class AppHandler(object):
     def __init__(self,inputfile,plot=False,identifier=None):
@@ -31,25 +32,28 @@ class AppHandler(object):
         self.plot = plot
         self.identifier = identifier
 
+        global plotting
+        plotting[identifier] = plot
+
         global received_size
         received_size[identifier] = 0
-
+        
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
         self.f = open("%s/%s" % (self.directory,self.inputfile),'wb')
-
 
     def receive_data(self,data):
         if self.plot:
             global original_size
             global received_size
+            global plotting
             Sim.trace('AppHandler',"application got %d bytes" % (len(data)))
             self.f.write(data)
             received_size[self.identifier] += len(data)
             self.f.flush()
             turn_timer_off = True
             for identifier in received_size.keys():
-                if received_size[identifier] != original_size:
+                if received_size[identifier] != original_size and plotting[identifier]:
                     turn_timer_off = False
                     break
             if turn_timer_off:
@@ -118,7 +122,7 @@ class Main(object):
     def decisecond(self,Sim):
         global decisecondEvent
         decisecondEvent = Sim.scheduler.add(delay=0.1, event=Sim, handler=self.decisecond)
-
+        
         global tcps
         for tcp in tcps:
             tcp.spur_plot_data_submission()
@@ -133,7 +137,7 @@ class Main(object):
             Sim.set_debug('TCP')
 
         # setup network
-        networkPlotter = Plotter('out/1-flow-advanced-aiad')
+        networkPlotter = Plotter('out/2-flows-advanced-competing-aimd')
         net = Network(config='networks/one-hop.txt',plotter=networkPlotter)
         net.loss(self.loss)
 
@@ -147,11 +151,15 @@ class Main(object):
         t1 = Transport(n1)
         t2 = Transport(n2)
 
-        c1 = TCP(t1,n1.get_address('n2'),1,n2.get_address('n1'),1,AppHandler(inputfile=self.inputfile,plot=True),window=self.window,type=self.type,receiver_flow_plot=True)
-        c2 = TCP(t2,n2.get_address('n1'),1,n1.get_address('n2'),1,AppHandler(inputfile=self.inputfile),window=self.window,type=self.type,window_size_plot=True,sequence_plot=True)
+        # setup connection
+        c1 = TCP(t1,n1.get_address('n2'),1,n2.get_address('n1'),1,AppHandler(inputfile=self.inputfile,identifier="c1"),window=self.window,type=self.type,window_size_plot=True,sequence_plot=True)
+        c2 = TCP(t2,n2.get_address('n1'),1,n1.get_address('n2'),1,AppHandler(inputfile=self.inputfile,plot=True,identifier="c2"),window=self.window,type=self.type,receiver_flow_plot=True)
+        
+        c3 = TCP(t1,n1.get_address('n2'),2,n2.get_address('n1'),2,AppHandler(inputfile=self.inputfile,identifier="c3"),window=self.window,type=self.type,window_size_plot=True,sequence_plot=True)
+        c4 = TCP(t2,n2.get_address('n1'),2,n1.get_address('n2'),2,AppHandler(inputfile=self.inputfile,plot=True,identifier="c4"),window=self.window,type=self.type,receiver_flow_plot=True)
 
         global tcps
-        tcps = [c1, c2]
+        tcps = [c1, c2, c3, c4]
 
         global original_size
         f = open(self.inputfile, "rb")
@@ -160,7 +168,7 @@ class Main(object):
             while data != "":
                 original_size += len(data)
                 Sim.scheduler.add(delay=0, event=data, handler=c1.send)
-                Sim.scheduler.add(delay=0, event=data, handler=c2.send)
+                Sim.scheduler.add(delay=0, event=data, handler=c3.send)
                 data = f.read(1000)
         finally:
             f.close()

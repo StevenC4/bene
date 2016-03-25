@@ -21,8 +21,8 @@ received_size = {}
 plotter = Plotter('out/1-flow-advanced-aimd')
 
 decisecondEvent = None
-decisecondBytes = {}
-previous_decisecond_stored_size = {}
+
+tcps = []
 
 class AppHandler(object):
     def __init__(self,inputfile,plot=False,identifier=None):
@@ -33,16 +33,11 @@ class AppHandler(object):
 
         global received_size
         received_size[identifier] = 0
-        
-        global previous_decisecond_stored_size
-        previous_decisecond_stored_size[identifier] = 0
-
-        global decisecondBytes
-        decisecondBytes[identifier] = []
 
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
         self.f = open("%s/%s" % (self.directory,self.inputfile),'wb')
+
 
     def receive_data(self,data):
         if self.plot:
@@ -61,14 +56,8 @@ class AppHandler(object):
                 global decisecondEvent
                 Sim.scheduler.cancel(decisecondEvent)
 
-                global previous_decisecond_stored_size
-                bytes_per_second = (original_size - previous_decisecond_stored_size[self.identifier]) / Sim.scheduler.current_time()
-                #print "Bytes per second: ", bytes_per_second
-                self.add_plot_data(Sim.scheduler.current_time(),bytes_per_second,'ReceiverRate',self.identifier)
-            #print 'Total bytes received', received_size, " Original ", original_size
-
-    def add_plot_data(self,t,data,event,identifier=None):
-        plotter.add_data(t,data,event,identifier)
+    def add_plot_data(self,t,data,event):
+        plotter.add_data(t,data,event,self.identifier)
 
 
 class Main(object):
@@ -129,18 +118,10 @@ class Main(object):
     def decisecond(self,Sim):
         global decisecondEvent
         decisecondEvent = Sim.scheduler.add(delay=0.1, event=Sim, handler=self.decisecond)
-        #plotter.add_data(t,data,event)
-        global received_size
-        global previous_decisecond_stored_size
 
-        for identifier in received_size.keys(): 
-            decisecondBytes[identifier].append(received_size[identifier] - previous_decisecond_stored_size[identifier])
-            previous_decisecond_stored_size[identifier] = received_size[identifier]
-            if len(decisecondBytes[identifier]) >= 10:
-                total_bytes_previous_second = sum(decisecondBytes[identifier][(len(decisecondBytes[identifier]) - 10):len(decisecondBytes[identifier])])
-            else:
-                total_bytes_previous_second = sum(decisecondBytes[identifier])
-            plotter.add_data(Sim.scheduler.current_time(),total_bytes_previous_second,'ReceiverRate',identifier)
+        global tcps
+        for tcp in tcps:
+            tcp.spur_plot_data_submission()
 
     def run(self):
         # parameters
@@ -166,8 +147,11 @@ class Main(object):
         t1 = Transport(n1)
         t2 = Transport(n2)
 
-        c1 = TCP(t1,n1.get_address('n2'),1,n2.get_address('n1'),1,AppHandler(inputfile=self.inputfile,plot=True),window=self.window,type=self.type)
+        c1 = TCP(t1,n1.get_address('n2'),1,n2.get_address('n1'),1,AppHandler(inputfile=self.inputfile,plot=True),window=self.window,type=self.type,receiver_flow_plot=True)
         c2 = TCP(t2,n2.get_address('n1'),1,n1.get_address('n2'),1,AppHandler(inputfile=self.inputfile),window=self.window,type=self.type,window_size_plot=True,sequence_plot=True)
+
+        global tcps
+        tcps = [c1, c2]
 
         global original_size
         f = open(self.inputfile, "rb")
