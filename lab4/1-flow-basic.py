@@ -57,7 +57,7 @@ class AppHandler(object):
                 Sim.scheduler.cancel(decisecondEvent)
 
     def add_plot_data(self,t,data,event):
-        plotter.add_data(t,data,event)
+        plotter.add_data(t,data,event,self.identifier)
 
 
 class Main(object):
@@ -118,8 +118,6 @@ class Main(object):
     def decisecond(self,Sim):
         global decisecondEvent
         decisecondEvent = Sim.scheduler.add(delay=0.1, event=Sim, handler=self.decisecond)
-        #plotter.add_data(t,data,event)
-        global received_size
 
         global tcps
         for tcp in tcps:
@@ -149,7 +147,7 @@ class Main(object):
         t1 = Transport(n1)
         t2 = Transport(n2)
 
-        c1 = TCP(t1,n1.get_address('n2'),1,n2.get_address('n1'),1,AppHandler(inputfile=self.inputfile,plot=True),window=self.window,type=self.type)
+        c1 = TCP(t1,n1.get_address('n2'),1,n2.get_address('n1'),1,AppHandler(inputfile=self.inputfile,plot=True),window=self.window,type=self.type,receiver_flow_plot=True)
         c2 = TCP(t2,n2.get_address('n1'),1,n1.get_address('n2'),1,AppHandler(inputfile=self.inputfile),window=self.window,type=self.type,window_size_plot=True,sequence_plot=True)
 
         global tcps

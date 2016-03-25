@@ -83,7 +83,7 @@ class Plotter:
             if identifier is None:
                 self.window_size.append((t,data))
             else:
-                if identifier not in self.multi_receiver_rate.keys():
+                if identifier not in self.multi_window_size.keys():
                     self.multi_window_size[identifier] = []
                 self.multi_window_size[identifier].append((t,data))
 
@@ -129,17 +129,14 @@ class Plotter:
         for (t,sequence) in self.transmitted_data:
             transmitted_x.append(t)
             transmitted_y.append((sequence / 1000) % 50)
-            #transmitted_y.append(sequence)
 
         for (t,sequence) in self.dropped_data:
             dropped_x.append(t)
             dropped_y.append((sequence / 1000) % 50)
-            #dropped_y.append(sequence)
 
         for (t,sequence) in self.acked_data:
             acked_x.append(t)
             acked_y.append((sequence / 1000) % 50)
-            #acked_y.append(sequence)
 
         #scatter(transmitted_x,transmitted_y,marker='.',s=1,c="black")
         scatter(transmitted_x,transmitted_y,marker='s',s=15,c="black")
@@ -200,7 +197,7 @@ class Plotter:
 
         plot(receiver_rate_x,receiver_rate_y)
         xlabel('Time (seconds)')
-        ylabel('Receiver Rate')
+        ylabel('Receiver Rate (bytes per second)')
         xlim([self.min_time['ReceiverRate'],self.max_time['ReceiverRate']])
         savefig(self.filename + '-receiver-rate.png')
         clf()
@@ -219,7 +216,7 @@ class Plotter:
             plot(multi_receiver_rate_x,multi_receiver_rate_y)
             
         xlabel('Time (seconds)')
-        ylabel('Receiver Rate')
+        ylabel('Receiver Rate (bytes per second)')
         xlim([self.min_time['ReceiverRate'],self.max_time['ReceiverRate']])
         savefig(self.filename + '-multi-receiver-rate.png')
         clf()    
@@ -242,7 +239,7 @@ class Plotter:
         plot(queue_size_x,queue_size_y)
         scatter(queue_dropped_x,queue_dropped_y,marker='x',s=100,c="red")
         xlabel('Time (seconds)')
-        ylabel('Queue Size')
+        ylabel('Queue Size (packets)')
         xlim([self.min_time['Queue'],self.max_time['Queue']])
         savefig(self.filename + '-queue-size.png')
         clf()
@@ -257,7 +254,7 @@ class Plotter:
 
         plot(window_size_x,window_size_y)
         xlabel('Time (seconds)')
-        ylabel('Window Size')
+        ylabel('Window Size (bytes)')
         xlim([self.min_time['WindowSize'],self.max_time['WindowSize']])
         savefig(self.filename + '-window-size.png')
         clf()
@@ -272,7 +269,7 @@ class Plotter:
                 multi_window_size_y.append(data)
             plot(multi_window_size_x,multi_window_size_y)
             xlabel('Time (seconds)')
-            ylabel('Window Size')
+            ylabel('Window Size (bytes)')
             xlim([self.min_time['WindowSize'],self.max_time['WindowSize']])
             savefig(self.filename + '-' + identifier + '-window_size.png')
             clf()

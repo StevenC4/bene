@@ -13,7 +13,7 @@ default_mss = 1000
 class TCP(Connection):
     ''' A TCP connection between two hosts.'''
     def __init__(self,transport,source_address,source_port,
-                 destination_address,destination_port,app=None,window=1000,dynamic_rto=True,type="Tahoe",window_size_plot=False,sequence_plot=False):
+                 destination_address,destination_port,app=None,window=1000,dynamic_rto=True,type="Tahoe",window_size_plot=False,sequence_plot=False,receiver_flow_plot=False):
         Connection.__init__(self,transport,source_address,source_port,
                             destination_address,destination_port,app)
 
@@ -62,6 +62,7 @@ class TCP(Connection):
 
         self.window_size_plot = window_size_plot
         self.sequence_plot = sequence_plot
+        self.receiver_flow_plot = receiver_flow_plot
 
         self.decisecond_received = 0
         self.decisecond_bytes = []
@@ -233,6 +234,9 @@ class TCP(Connection):
         self.send_ack(packet.created)
 
     def spur_plot_data_submission(self):
+        if not self.receiver_flow_plot:
+            return
+        
         self.decisecond_bytes.append(self.decisecond_received)
         self.decisecond_received = 0
         if len(self.decisecond_bytes) >= 10:
