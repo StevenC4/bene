@@ -18,11 +18,12 @@ import threading
 original_size = 0
 received_size = {}
 
-plotter = Plotter('out/2-flows-simple')
+plotter = Plotter('out/5-flows-simple')
 
 decisecondEvent = None
 decisecondBytes = {}
 previous_decisecond_stored_size = {}
+plotting = {}
 
 class AppHandler(object):
     def __init__(self,inputfile,plot=False,identifier=None):
@@ -30,6 +31,9 @@ class AppHandler(object):
         self.directory = 'received'
         self.plot = plot
         self.identifier = identifier
+
+        global applications
+        plotting[identifier] = plot
 
         global received_size
         received_size[identifier] = 0
@@ -48,13 +52,14 @@ class AppHandler(object):
         if self.plot:
             global original_size
             global received_size
+            global applications
             Sim.trace('AppHandler',"application got %d bytes" % (len(data)))
             self.f.write(data)
             received_size[self.identifier] += len(data)
             self.f.flush()
             turn_timer_off = True
             for identifier in received_size.keys():
-                if received_size[identifier] != original_size:
+                if received_size[identifier] != original_size and plotting[identifier]:
                     turn_timer_off = False
                     break
             if turn_timer_off:
@@ -152,7 +157,7 @@ class Main(object):
             Sim.set_debug('TCP')
 
         # setup network
-        networkPlotter = Plotter('out/2-flows-simple')
+        networkPlotter = Plotter('out/5-flows-simple')
         net = Network(config='networks/one-hop.txt',plotter=networkPlotter)
         net.loss(self.loss)
 
@@ -167,8 +172,20 @@ class Main(object):
         t2 = Transport(n2)
 
         # setup connection
-        c1 = TCP(t1,n1.get_address('n2'),1,n2.get_address('n1'),1,AppHandler(inputfile=self.inputfile,plot=True,identifier="c1"),window=self.window,type=self.type,window_size_plot=True,sequence_plot=True)
-        c2 = TCP(t2,n2.get_address('n1'),1,n1.get_address('n2'),1,AppHandler(inputfile=self.inputfile,plot=True,identifier="c2"),window=self.window,type=self.type,window_size_plot=True,sequence_plot=True)
+        c1 = TCP(t1,n1.get_address('n2'),1,n2.get_address('n1'),1,AppHandler(inputfile=self.inputfile,identifier="c1"),window=self.window,type=self.type)
+        c2 = TCP(t2,n2.get_address('n1'),1,n1.get_address('n2'),1,AppHandler(inputfile=self.inputfile,plot=True,identifier="c2"),window=self.window,type=self.type)
+        
+        c3 = TCP(t1,n1.get_address('n2'),2,n2.get_address('n1'),2,AppHandler(inputfile=self.inputfile,identifier="c3"),window=self.window,type=self.type)
+        c4 = TCP(t2,n2.get_address('n1'),2,n1.get_address('n2'),2,AppHandler(inputfile=self.inputfile,plot=True,identifier="c4"),window=self.window,type=self.type)
+
+        c5 = TCP(t1,n1.get_address('n2'),3,n2.get_address('n1'),3,AppHandler(inputfile=self.inputfile,identifier="c5"),window=self.window,type=self.type)
+        c6 = TCP(t2,n2.get_address('n1'),3,n1.get_address('n2'),3,AppHandler(inputfile=self.inputfile,plot=True,identifier="c6"),window=self.window,type=self.type)
+        
+        c7 = TCP(t1,n1.get_address('n2'),4,n2.get_address('n1'),4,AppHandler(inputfile=self.inputfile,identifier="c7"),window=self.window,type=self.type)
+        c8 = TCP(t2,n2.get_address('n1'),4,n1.get_address('n2'),4,AppHandler(inputfile=self.inputfile,plot=True,identifier="c8"),window=self.window,type=self.type)
+
+        c9 = TCP(t1,n1.get_address('n2'),5,n2.get_address('n1'),5,AppHandler(inputfile=self.inputfile,identifier="c9"),window=self.window,type=self.type)
+        c10 = TCP(t2,n2.get_address('n1'),5,n1.get_address('n2'),5,AppHandler(inputfile=self.inputfile,plot=True,identifier="c10"),window=self.window,type=self.type)
 
         global original_size
         f = open(self.inputfile, "rb")
@@ -177,7 +194,10 @@ class Main(object):
             while data != "":
                 original_size += len(data)
                 Sim.scheduler.add(delay=0, event=data, handler=c1.send)
-                Sim.scheduler.add(delay=0, event=data, handler=c2.send)
+                Sim.scheduler.add(delay=0.1, event=data, handler=c3.send)
+                Sim.scheduler.add(delay=0.2, event=data, handler=c5.send)
+                Sim.scheduler.add(delay=0.3, event=data, handler=c7.send)
+                Sim.scheduler.add(delay=0.4, event=data, handler=c9.send)
                 data = f.read(1000)
         finally:
             f.close()

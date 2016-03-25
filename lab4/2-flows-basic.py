@@ -23,6 +23,7 @@ plotter = Plotter('out/2-flows-simple')
 decisecondEvent = None
 decisecondBytes = {}
 previous_decisecond_stored_size = {}
+plotting = {}
 
 class AppHandler(object):
     def __init__(self,inputfile,plot=False,identifier=None):
@@ -30,6 +31,9 @@ class AppHandler(object):
         self.directory = 'received'
         self.plot = plot
         self.identifier = identifier
+
+        global applications
+        plotting[identifier] = plot
 
         global received_size
         received_size[identifier] = 0
@@ -48,13 +52,14 @@ class AppHandler(object):
         if self.plot:
             global original_size
             global received_size
+            global applications
             Sim.trace('AppHandler',"application got %d bytes" % (len(data)))
             self.f.write(data)
             received_size[self.identifier] += len(data)
             self.f.flush()
             turn_timer_off = True
             for identifier in received_size.keys():
-                if received_size[identifier] != original_size:
+                if received_size[identifier] != original_size and plotting[identifier]:
                     turn_timer_off = False
                     break
             if turn_timer_off:
@@ -167,8 +172,11 @@ class Main(object):
         t2 = Transport(n2)
 
         # setup connection
-        c1 = TCP(t1,n1.get_address('n2'),1,n2.get_address('n1'),1,AppHandler(inputfile=self.inputfile,plot=True,identifier="c1"),window=self.window,type=self.type,window_size_plot=True,sequence_plot=True)
-        c2 = TCP(t2,n2.get_address('n1'),1,n1.get_address('n2'),1,AppHandler(inputfile=self.inputfile,plot=True,identifier="c2"),window=self.window,type=self.type,window_size_plot=True,sequence_plot=True)
+        c1 = TCP(t1,n1.get_address('n2'),1,n2.get_address('n1'),1,AppHandler(inputfile=self.inputfile,identifier="c1"),window=self.window,type=self.type,window_size_plot=True,sequence_plot=True)
+        c2 = TCP(t2,n2.get_address('n1'),1,n1.get_address('n2'),1,AppHandler(inputfile=self.inputfile,plot=True,identifier="c2"),window=self.window,type=self.type)
+        
+        c3 = TCP(t1,n1.get_address('n2'),2,n2.get_address('n1'),2,AppHandler(inputfile=self.inputfile,identifier="c3"),window=self.window,type=self.type,window_size_plot=True,sequence_plot=True)
+        c4 = TCP(t2,n2.get_address('n1'),2,n1.get_address('n2'),2,AppHandler(inputfile=self.inputfile,plot=True,identifier="c4"),window=self.window,type=self.type)
 
         global original_size
         f = open(self.inputfile, "rb")
@@ -177,7 +185,7 @@ class Main(object):
             while data != "":
                 original_size += len(data)
                 Sim.scheduler.add(delay=0, event=data, handler=c1.send)
-                Sim.scheduler.add(delay=0, event=data, handler=c2.send)
+                Sim.scheduler.add(delay=0, event=data, handler=c3.send)
                 data = f.read(1000)
         finally:
             f.close()
