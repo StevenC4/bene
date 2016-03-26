@@ -105,6 +105,7 @@ class TCP(Connection):
                            destination_port=self.destination_port,
                            body=data,
                            sequence=sequence,ack_number=self.ack)
+        #print self.source_address,self.source_port,self.destination_address,self.destination_port
         packet.created = Sim.scheduler.current_time()
 
         # Store data for plotting

@@ -138,25 +138,50 @@ class Main(object):
 
         # setup network
         networkPlotter = Plotter('out/2-flows-advanced-competing-aimd')
-        net = Network(config='networks/one-hop.txt',plotter=networkPlotter)
+        net = Network(config='networks/competing-rtt.txt',plotter=networkPlotter)
         net.loss(self.loss)
 
         # setup routes
         n1 = net.get_node('n1')
         n2 = net.get_node('n2')
-        n1.add_forwarding_entry(address=n2.get_address('n1'),link=n1.links[0])
-        n2.add_forwarding_entry(address=n1.get_address('n2'),link=n2.links[0])
+        n3 = net.get_node('n3')
+        n4 = net.get_node('n4')
+
+        # n1 -> n3
+        n1.add_forwarding_entry(address=n3.get_address('n1'),link=n1.links[0])
+        # n1 -> n4
+        n1.add_forwarding_entry(address=n4.get_address('n3'),link=n1.links[0])
+        # n2 -> n3
+        n2.add_forwarding_entry(address=n3.get_address('n2'),link=n2.links[0])
+        # n2 -> n4
+        n2.add_forwarding_entry(address=n4.get_address('n3'),link=n2.links[0])
+        # n3 -> n4
+        n3.add_forwarding_entry(address=n4.get_address('n3'),link=n3.links[2])
+
+
+        # n3 -> n1
+        n3.add_forwarding_entry(address=n1.get_address('n3'),link=n3.links[0])
+        # n3 -> n2
+        n3.add_forwarding_entry(address=n2.get_address('n3'),link=n3.links[1])
+        # n4 -> n3
+        n4.add_forwarding_entry(address=n3.get_address('n4'),link=n4.links[0])
+        # n4 -> n1
+        n4.add_forwarding_entry(address=n1.get_address('n3'),link=n4.links[0])        
+        # n4 -> n2
+        n4.add_forwarding_entry(address=n2.get_address('n3'),link=n4.links[0])
 
         # setup transport
         t1 = Transport(n1)
         t2 = Transport(n2)
+        t3 = Transport(n3)
+        t4 = Transport(n4)
 
         # setup connection
-        c1 = TCP(t1,n1.get_address('n2'),1,n2.get_address('n1'),1,AppHandler(inputfile=self.inputfile,identifier="c1"),window=self.window,type=self.type,window_size_plot=True,sequence_plot=True)
-        c2 = TCP(t2,n2.get_address('n1'),1,n1.get_address('n2'),1,AppHandler(inputfile=self.inputfile,plot=True,identifier="c2"),window=self.window,type=self.type,receiver_flow_plot=True)
+        c1 = TCP(t1,n1.get_address('n4'),1,n4.get_address('n1'),1,AppHandler(inputfile=self.inputfile,identifier="c1"),window=self.window,type=self.type)
+        c2 = TCP(t4,n4.get_address('n1'),1,n1.get_address('n4'),1,AppHandler(inputfile=self.inputfile,plot=True,identifier="c2"),window=self.window,type=self.type)
         
-        c3 = TCP(t1,n1.get_address('n2'),2,n2.get_address('n1'),2,AppHandler(inputfile=self.inputfile,identifier="c3"),window=self.window,type=self.type,window_size_plot=True,sequence_plot=True)
-        c4 = TCP(t2,n2.get_address('n1'),2,n1.get_address('n2'),2,AppHandler(inputfile=self.inputfile,plot=True,identifier="c4"),window=self.window,type=self.type,receiver_flow_plot=True)
+        c3 = TCP(t2,n2.get_address('n4'),2,n4.get_address('n2'),2,AppHandler(inputfile=self.inputfile,identifier="c3"),window=self.window,type=self.type)
+        c4 = TCP(t4,n4.get_address('n2'),2,n2.get_address('n4'),2,AppHandler(inputfile=self.inputfile,plot=True,identifier="c4"),window=self.window,type=self.type)
 
         global tcps
         tcps = [c1, c2, c3, c4]
