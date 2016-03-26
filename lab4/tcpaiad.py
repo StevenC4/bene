@@ -1,3 +1,4 @@
+
 import sys
 sys.path.append('..')
 
@@ -178,7 +179,7 @@ class TCP(Connection):
 
 
         self.threshold = max(self.threshold - self.mss, self.mss)
-        self.window = max(self.window - self.mss, self.mss) 
+        self.window = self.mss 
 
         self.timer = None
         self.trace("%s (%d) entering fast retransmission" % (self.node.hostname,self.source_address))

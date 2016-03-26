@@ -86,6 +86,7 @@ class Plotter:
                 if identifier not in self.multi_window_size.keys():
                     self.multi_window_size[identifier] = []
                 self.multi_window_size[identifier].append((t,data))
+                min_max_key = 'WindowSize' + identifier
 
         self.set_min_max_times(t,min_max_key)
 
@@ -270,7 +271,7 @@ class Plotter:
             plot(multi_window_size_x,multi_window_size_y)
             xlabel('Time (seconds)')
             ylabel('Window Size (bytes)')
-            xlim([self.min_time['WindowSize'],self.max_time['WindowSize']])
+            xlim([self.min_time['WindowSize' + identifier],self.max_time['WindowSize' + identifier]])
             savefig(self.filename + '-' + identifier + '-window_size.png')
             clf()
 

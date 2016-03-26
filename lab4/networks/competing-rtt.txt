@@ -1,15 +1,15 @@
 #
-n1 n3
-n2 n3
-n3 n1 n2 n4
-n4 n3
+A C
+B C
+C A B D
+D C
 
 # link configuration
-n1 n3 100pkts 10Mbps 100ms
-n3 n1 100pkts 10Mbps 100ms
+A C 100pkts 10Mbps 100ms
+C A 100pkts 10Mbps 100ms
 
-n2 n3 100pkts 10Mbps 10ms
-n3 n2 100pkts 10Mbps 10ms
+B C 100pkts 10Mbps 10ms
+C B 100pkts 10Mbps 10ms
 
-n3 n4 100pkts 10Mbps 10ms
-n4 n3 100pkts 10Mbps 10ms
+C D 100pkts 10Mbps 10ms
+D C 100pkts 10Mbps 10ms
